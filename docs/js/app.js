@@ -6,6 +6,7 @@
 //   #/home                  -> home hub (requires an active profile)
 //   #/lesson/<MODULE>        -> a lesson for the given module
 //   #/progress              -> progress + badges screen
+//   #/worksheet             -> printable worksheet / sprawdzian generator (parent/teacher tool)
 
 import * as storage from './data/storage.js';
 import { LEARNING_MODULES } from './logic/models.js';
@@ -13,6 +14,7 @@ import { renderProfileScreen } from './ui/profileView.js';
 import { renderHomeScreen } from './ui/homeView.js';
 import { renderLessonScreen } from './ui/lessonView.js';
 import { renderProgressScreen } from './ui/progressView.js';
+import { renderWorksheetScreen } from './ui/worksheetView.js';
 import { el } from './ui/dom.js';
 import { stop as stopSpeech } from './audio/speech.js';
 
@@ -71,8 +73,10 @@ function render() {
 
   const activeProfileId = storage.getActiveProfileId();
 
-  // Guard: everything except the profile screen needs an active profile.
-  if (route !== 'profile' && !activeProfileId) {
+  // Guard: everything except the profile screen and the worksheet generator
+  // needs an active profile. The worksheet is a parent/teacher tool, so it stays
+  // reachable even without a signed-in child profile.
+  if (route !== 'profile' && route !== 'worksheet' && !activeProfileId) {
     navigate('#/profile');
     return;
   }
@@ -82,6 +86,7 @@ function render() {
       renderHomeScreen(app, {
         onOpenModule: (module) => navigate(`#/lesson/${module}`),
         onOpenProgress: () => navigate('#/progress'),
+        onOpenWorksheet: () => navigate('#/worksheet'),
         onSwitchProfile: () => navigate('#/profile')
       });
       break;
@@ -102,6 +107,11 @@ function render() {
       renderProgressScreen(app, {
         profileId: activeProfileId,
         onBack: () => navigate('#/home')
+      });
+      break;
+    case 'worksheet':
+      renderWorksheetScreen(app, {
+        onBack: () => navigate(activeProfileId ? '#/home' : '#/profile')
       });
       break;
     case 'profile':

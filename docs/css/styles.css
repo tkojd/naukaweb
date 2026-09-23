@@ -1426,3 +1426,333 @@ input:focus-visible,
     flex-wrap: wrap;
   }
 }
+
+/* --- Worksheet / sprawdzian generator (parent/teacher tool) --- */
+
+.tile--worksheet {
+  /* Distinct teal accent + bolder outline, matching the Postępy treatment. */
+  box-shadow: 0 8px 0 color-mix(in srgb, var(--tile-accent) 70%, #000),
+    0 0 0 3px color-mix(in srgb, var(--tile-accent) 30%, transparent),
+    var(--shadow-md);
+}
+
+.screen--worksheet {
+  gap: var(--space-4);
+}
+
+.worksheet-intro {
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+  text-align: center;
+  margin: 0 auto var(--space-2);
+  max-width: 640px;
+}
+
+.worksheet-form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+}
+
+.worksheet-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.worksheet-field--check {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-3);
+  grid-column: 1 / -1;
+}
+
+.worksheet-label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
+.worksheet-label--inline {
+  font-weight: 600;
+}
+
+.worksheet-select,
+.worksheet-input {
+  min-height: 56px;
+  font-size: 1.05rem;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--surface-alt);
+  border: 2px solid color-mix(in srgb, var(--primary) 35%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-3);
+}
+
+.worksheet-select:focus-visible,
+.worksheet-input:focus-visible,
+.worksheet-checkbox:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.worksheet-checkbox {
+  width: 32px;
+  height: 32px;
+  accent-color: var(--go);
+}
+
+.worksheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+.worksheet-print-bar {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-4) 0;
+}
+
+/* The printable sheet, styled for screen with the app's surfaces; @media print
+   below strips color and chrome for a clean black-on-white printout. */
+.worksheet-sheet {
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  padding: var(--space-6);
+  max-width: 800px;
+  margin: 0 auto var(--space-6);
+}
+
+.worksheet-header {
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.worksheet-title {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  margin: 0 0 var(--space-2);
+}
+
+.worksheet-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  color: var(--ink-soft);
+  font-size: 1rem;
+}
+
+.worksheet-exercises {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.worksheet-exercise {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.worksheet-instructions {
+  font-style: italic;
+  color: var(--ink-soft);
+  margin: 0 0 var(--space-1);
+  font-size: 0.95rem;
+}
+
+.worksheet-prompt {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0 0 var(--space-2);
+}
+
+.worksheet-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.worksheet-choice {
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-pill);
+  padding: var(--space-2) var(--space-4);
+  font-size: 1.05rem;
+}
+
+.worksheet-match {
+  display: flex;
+  gap: var(--space-7);
+}
+
+.worksheet-match-col {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: 1;
+}
+
+.worksheet-match-cell {
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: 1.05rem;
+}
+
+.worksheet-answer-line {
+  border-bottom: 2px solid var(--ink);
+  height: 40px;
+  margin-top: var(--space-2);
+}
+
+.worksheet-answer-key {
+  margin-top: var(--space-6);
+  border-top: 2px dashed var(--ink);
+  padding-top: var(--space-4);
+}
+
+.worksheet-answer-key-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  margin: 0 0 var(--space-3);
+}
+
+.worksheet-answer-key-list {
+  columns: 2;
+  gap: var(--space-5);
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.worksheet-answer-key-item {
+  margin-bottom: var(--space-2);
+}
+
+@media (max-width: 480px) {
+  .worksheet-form {
+    grid-template-columns: 1fr;
+  }
+
+  .worksheet-answer-key-list {
+    columns: 1;
+  }
+}
+
+/* --- Print: clean black-on-white worksheet ---
+   Hide all app chrome (fixed sound toggle, home nav, form controls, generate/
+   print buttons, gradients), force black text on a white page, keep exercises
+   from splitting across pages, and show the answer key only when the sheet was
+   generated with it (worksheet-sheet--with-key). */
+@media print {
+  :root {
+    --bg: #fff;
+    --ink: #000;
+    --ink-soft: #000;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  body {
+    /* neutralize the app's background gradient for print */
+    background-image: none !important;
+  }
+
+  /* Hide everything that is not the generated sheet. */
+  .sound-toggle,
+  .worksheet-intro,
+  .worksheet-form,
+  .worksheet-actions,
+  .worksheet-print-bar,
+  .screen-title,
+  .big-button,
+  .tile-grid,
+  .home-header {
+    display: none !important;
+  }
+
+  #app,
+  .screen,
+  .screen--worksheet {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  .worksheet-output {
+    display: block !important;
+  }
+
+  .worksheet-sheet {
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    font-size: 12pt;
+  }
+
+  .worksheet-title {
+    font-size: 18pt;
+    color: #000 !important;
+  }
+
+  .worksheet-header {
+    border-bottom: 1.5pt solid #000 !important;
+  }
+
+  .worksheet-meta,
+  .worksheet-instructions {
+    color: #000 !important;
+  }
+
+  .worksheet-choice,
+  .worksheet-match-cell {
+    border-color: #000 !important;
+    color: #000 !important;
+  }
+
+  .worksheet-answer-line {
+    border-bottom-color: #000 !important;
+  }
+
+  .worksheet-exercise {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 14pt;
+  }
+
+  /* The answer key prints only when the sheet opted in. */
+  .worksheet-answer-key {
+    display: none !important;
+    break-before: page;
+    page-break-before: always;
+    border-top: 1.5pt solid #000 !important;
+  }
+
+  .worksheet-sheet--with-key .worksheet-answer-key {
+    display: block !important;
+  }
+}

@@ -11,14 +11,15 @@ const TILES = [
   { module: LEARNING_MODULES.POLISH_LETTERS, title: 'Litery', emoji: '🔤', color: '#4D96FF' },
   { module: LEARNING_MODULES.NUMBERS, title: 'Cyfry', emoji: '🔢', color: '#6BCB77' },
   { module: LEARNING_MODULES.ENGLISH, title: 'Angielski', emoji: '🇬🇧', color: '#FFA45B' },
-  { module: null, title: 'Postępy', emoji: '🏆', color: '#B983FF' }
+  { module: null, kind: 'progress', title: 'Postępy', emoji: '🏆', color: '#B983FF' },
+  { module: null, kind: 'worksheet', title: 'Arkusze do druku', emoji: '🖨️', color: '#00A3A3' }
 ];
 
 /**
  * @param {HTMLElement} root
  * @param {{onOpenModule:Function, onOpenProgress:Function, onSwitchProfile:Function}} handlers
  */
-export function renderHomeScreen(root, { onOpenModule, onOpenProgress, onSwitchProfile }) {
+export function renderHomeScreen(root, { onOpenModule, onOpenProgress, onOpenWorksheet, onSwitchProfile }) {
   clear(root);
   const profileId = storage.getActiveProfileId();
   const profile = storage.getProfile(profileId);
@@ -62,14 +63,16 @@ export function renderHomeScreen(root, { onOpenModule, onOpenProgress, onSwitchP
   const grid = el('div', { className: 'tile-grid' });
   for (const tile of TILES) {
     const subtitle = tile.module != null ? `⭐ ${starsByModule[tile.module] || 0}` : null;
-    const isProgress = tile.module == null;
+    const modifier =
+      tile.kind === 'progress' ? ' tile--progress' : tile.kind === 'worksheet' ? ' tile--worksheet' : '';
     grid.appendChild(
       el('button', {
-        className: `tile touch-target${isProgress ? ' tile--progress' : ''}`,
+        className: `tile touch-target${modifier}`,
         type: 'button',
         style: { '--tile-accent': tile.color },
         onClick: () => {
           if (tile.module != null) onOpenModule(tile.module);
+          else if (tile.kind === 'worksheet') onOpenWorksheet && onOpenWorksheet();
           else onOpenProgress();
         }
       }, [

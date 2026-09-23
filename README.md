@@ -191,6 +191,7 @@ docs/
       srs.js            # harmonogram powtórek Leitnera
       gamification.js   # punkty, gwiazdki, odznaki
       streak.js         # seria dni nauki
+      worksheet.js      # generator arkuszy do druku (sprawdzianów)
       models.js         # modele i stałe
     data/               # trwałość na localStorage
       storage.js
