@@ -147,7 +147,10 @@ neutralizowane (treść pozostaje od razu widoczna).
 ### Zależność od czcionki i tryb offline
 
 Nagłówki i tekst korzystają z zaokrąglonej, przyjaznej czcionki webowej z **Google Fonts**
-(**Fredoka** oraz **Nunito**), ładowanej z `preconnect` dla szybszego startu. Jeśli sieć
+(**Fredoka** oraz **Nunito**), ładowanej z `preconnect` dla szybszego startu. Zapytanie do
+Google Fonts zawiera parametr **`subset=latin-ext`**, dzięki czemu polskie znaki
+diakrytyczne (ą, ć, ę, ł, ń, ó, ś, ź, ż) renderują się w tym samym kroju co reszta
+tekstu, a nie spadają do czcionki zastępczej. Jeśli sieć
 lub CDN są niedostępne, aplikacja płynnie przechodzi na **zaokrągloną czcionkę systemową**
 (`ui-rounded`, `Segoe UI Rounded`, `SF Pro Rounded`, `system-ui`), więc **wygląda dobrze
 także offline** i nie traci swojego zaokrąglonego charakteru.
