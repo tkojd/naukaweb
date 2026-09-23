@@ -1,0 +1,501 @@
+/* Nauka i Zabawa - colorful, high-contrast, child-friendly styling. Large touch
+   targets (min ~72px), responsive layout that works on desktop and tablet. Positive,
+   never punitive. */
+
+:root {
+  --bg: #FFF8E7;
+  --surface: #FFFFFF;
+  --ink: #2B2B3A;
+  --primary: #4D96FF;
+  --secondary: #B983FF;
+  --go: #6BCB77;
+  --retry: #FFD166;
+  --shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  --radius: 24px;
+  --touch: 72px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Comic Sans MS', 'Baloo 2', 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px;
+}
+
+.screen-title {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  text-align: center;
+  margin: 8px 0;
+  color: var(--ink);
+}
+
+/* --- Buttons / touch targets --- */
+
+.touch-target {
+  min-height: var(--touch);
+  min-width: var(--touch);
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius);
+  font-family: inherit;
+}
+
+.big-button {
+  min-height: var(--touch);
+  width: 100%;
+  font-size: clamp(1.2rem, 3.5vw, 1.6rem);
+  font-weight: 700;
+  color: #fff;
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 20px;
+  transition: transform 0.08s ease, filter 0.15s ease;
+}
+
+.big-button:active {
+  transform: scale(0.97);
+}
+
+.big-button:hover {
+  filter: brightness(1.05);
+}
+
+.big-button--secondary {
+  background: var(--secondary);
+}
+
+.big-button--go {
+  background: var(--go);
+}
+
+/* --- Profile screen --- */
+
+.profile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 18px 24px;
+  text-align: left;
+  font-size: 1.4rem;
+}
+
+.profile-avatar {
+  font-size: 2.6rem;
+}
+
+.profile-name {
+  font-weight: 700;
+}
+
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.create-hint {
+  text-align: center;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.avatar-choice {
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: 2rem;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-choice--selected {
+  background: var(--primary);
+  outline: 4px solid var(--go);
+}
+
+.name-input {
+  min-height: var(--touch);
+  border-radius: var(--radius);
+  border: 3px solid var(--primary);
+  padding: 12px 20px;
+  font-size: 1.4rem;
+  font-family: inherit;
+}
+
+.name-input:focus {
+  outline: 3px solid var(--secondary);
+}
+
+/* --- Home screen --- */
+
+.home-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.home-avatar {
+  font-size: 3rem;
+}
+
+.home-greeting {
+  flex: 1;
+}
+
+.home-greeting .screen-title {
+  text-align: left;
+  margin: 0;
+}
+
+.home-totals {
+  margin: 4px 0 0;
+  font-size: 1.2rem;
+}
+
+.home-prompt {
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 150px;
+  color: #fff;
+  box-shadow: var(--shadow);
+  padding: 20px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.08s ease;
+}
+
+.tile:active {
+  transform: scale(0.97);
+}
+
+.tile-emoji {
+  font-size: 3rem;
+}
+
+.tile-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.tile-subtitle {
+  font-size: 1.1rem;
+}
+
+/* --- Lesson screen --- */
+
+.lesson-counter {
+  text-align: center;
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.prompt-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 200px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  text-align: center;
+}
+
+.prompt-card--color {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+}
+
+.prompt-color-name {
+  font-size: clamp(2rem, 6vw, 3rem);
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.prompt-letter {
+  font-size: clamp(4rem, 14vw, 7rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.prompt-example {
+  font-size: 1.6rem;
+}
+
+.prompt-digit {
+  font-size: clamp(4rem, 14vw, 7rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.prompt-count {
+  font-size: 1.8rem;
+  letter-spacing: 4px;
+}
+
+.prompt-emoji {
+  font-size: clamp(3rem, 10vw, 5rem);
+}
+
+.prompt-word {
+  font-size: clamp(2rem, 7vw, 3rem);
+  font-weight: 800;
+}
+
+.speaker-row {
+  display: flex;
+  justify-content: center;
+}
+
+.speaker-button {
+  background: var(--secondary);
+  color: #fff;
+  font-size: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.feedback-slot:empty {
+  display: none;
+}
+
+.feedback {
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  color: #fff;
+}
+
+.feedback--correct {
+  background: var(--go);
+}
+
+.feedback--retry {
+  background: var(--retry);
+  color: var(--ink);
+}
+
+.feedback-text {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.feedback-badge {
+  font-size: 1.2rem;
+  margin: 8px 0 0;
+}
+
+.answer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.answer-grid--done {
+  grid-template-columns: 1fr;
+}
+
+.answer {
+  min-height: 96px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: 1.6rem;
+  font-weight: 700;
+  padding: 16px;
+  transition: transform 0.08s ease;
+}
+
+.answer:active {
+  transform: scale(0.96);
+}
+
+.answer--color {
+  min-height: 110px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+}
+
+/* --- Lesson summary --- */
+
+.lesson-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.summary-emoji {
+  font-size: 4rem;
+}
+
+.summary-points {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.star-row {
+  display: flex;
+  gap: 6px;
+  font-size: 2rem;
+}
+
+/* --- Progress screen --- */
+
+.progress-totals {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.module-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
+
+.module-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.module-card-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.module-card-mastered {
+  font-size: 1.1rem;
+}
+
+.badges-heading {
+  text-align: center;
+  font-size: 1.6rem;
+  margin: 12px 0 0;
+}
+
+.badge-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.badge-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  box-shadow: var(--shadow);
+  background: var(--surface);
+}
+
+.badge-card--earned {
+  background: var(--secondary);
+  color: #fff;
+}
+
+.badge-icon {
+  font-size: 2.2rem;
+}
+
+.badge-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.badge-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.badge-desc {
+  font-size: 1rem;
+}
+
+/* --- Responsive --- */
+
+@media (max-width: 480px) {
+  .avatar-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .tile-grid,
+  .answer-grid {
+    grid-template-columns: 1fr;
+  }
+}
