@@ -1,0 +1,21 @@
+{
+  "id": "FEAT-003",
+  "type": "docs",
+  "description": "Polish README documenting the web app, the implemented learning methods and why, the tech stack (vanilla static app + Web Speech API + localStorage + Vitest), how to run locally, how it is hosted on GitHub Pages (branch=main folder=/docs at https://tkojd.github.io/naukaweb/), and honest limitations (Web Speech voice availability depends on browser/OS). Also add a root .gitignore for node_modules. Depends on FEAT-001 and FEAT-002.",
+  "status": "completed",
+  "steps": [
+    "Create /projects/sandbox/naukaweb/.gitignore ignoring node_modules/ and common editor/OS cruft (do NOT ignore docs/).",
+    "Create /projects/sandbox/naukaweb/README.md IN POLISH covering: (1) czym jest aplikacja — webowa wersja 'Nauka i Zabawa' dla dzieci 4-10, cztery moduły Kolory/Litery/Cyfry/Angielski, profile i trwały postęp; (2) zaimplementowane metody nauki i dlaczego — grywalizacja (punkty/serie/gwiazdki/odznaki, brak punktów ujemnych), powtórki rozłożone w czasie (pudełka Leitnera 1-5, interwały 1/2/4/7/15 dni, krzywa zapominania Ebbinghausa), nauka multimedialna (zasady Mayera, audio-first przez Web Speech API, krótkie porcje 6 pytań x 4 opcje), Montessori (prowadzenie przez dziecko, tylko pozytywne wzmocnienia); (3) stos technologiczny — czyste statyczne HTML/CSS/JS (moduły ES, bez kroku budowania), Web Speech API do wymowy, localStorage do trwałego zapisu per-profil, Vitest do testów jednostkowych czystej logiki; uzasadnienie wyboru waniliowego rozwiązania bez build-stepu jako najprostszego do hostowania na GitHub Pages z katalogu docs/; (4) jak uruchomić lokalnie — otworzyć docs/index.html lub `python3 -m http.server -d docs` / `npx serve docs`; testy: `npm install` + `npm test`; (5) hosting — GitHub Pages ze źródłem branch=main, folder=/docs, adres https://tkojd.github.io/naukaweb/, dlatego ścieżki są względne; (6) ograniczenia — dostępność i jakość głosów Web Speech API zależy od przeglądarki/systemu (np. brak głosu pl-PL na niektórych systemach), aplikacja działa bez backendu i offline po pierwszym załadowaniu, dane trzymane lokalnie w przeglądarce.",
+    "Ensure the README states verification commands accurately and links the live URL as a markdown link."
+  ],
+  "acceptance_criteria": [
+    "README.md exists in Polish and documents app description, the four methods with rationale, tech stack + justification for the no-build static approach, local run instructions, GitHub Pages hosting details (branch=main /docs, /naukaweb/ subpath), and Web Speech limitations.",
+    ".gitignore ignores node_modules/ and does not ignore docs/."
+  ],
+  "verification": [
+    "Read README.md and confirm all six required sections are present and in Polish.",
+    "Confirm `npm test` still passes and docs/ still serves after the docs changes (no code touched)."
+  ],
+  "blocked_reason": null,
+  "findings": "Added Polish README.md with all six required sections (opis aplikacji; metody nauki + uzasadnienie: grywalizacja, powtorki Leitnera, nauka multimedialna Mayer/audio-first, Montessori; stos technologiczny + uzasadnienie waniliowego no-build; uruchomienie lokalne + testy; hosting GitHub Pages branch=main /docs pod /naukaweb/; ograniczenia Web Speech / brak backendu / offline / dane lokalne). Content grounded in docs/js/logic/content.js: 10 kolorow, 32 litery incl. 9 diakrytykow (Ą Ć Ę Ł Ń Ó Ś Ź Ż), cyfry 0-9, angielski. Updated .gitignore to also cover editor/OS cruft; node_modules/ ignored, docs/ NOT ignored (verified via git check-ignore). No app code touched; npm test still green (35/35)."
+}

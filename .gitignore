@@ -1,3 +1,20 @@
+# Zależności deweloperskie (tylko do testów Vitest, nie są wdrażane)
 node_modules/
+
+# Logi i pliki tymczasowe
 *.log
+npm-debug.log*
+
+# Cruft systemów operacyjnych
 .DS_Store
+Thumbs.db
+
+# Pliki edytorów / IDE
+.idea/
+.vscode/
+*.swp
+*~
+.cache/
+coverage/
+
+# UWAGA: katalog docs/ NIE jest ignorowany - to wdrażana aplikacja (GitHub Pages).
