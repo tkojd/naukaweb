@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "docs",
   "description": "Final polish pass and documentation. Do a cross-screen consistency/accessibility/responsiveness review of the redesign, fix any rough edges found, and update the Polish README to describe the new look, animations, effect sounds, sound toggle, and the webfont dependency + offline fallback, while preserving the existing hosting and limitations sections.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Review the redesign at desktop (primary), tablet, and phone widths (e.g. resize to ~1200px, ~768px, ~375px). Verify the layout stays clean, tiles/answer grids reflow sensibly (the existing @media (max-width:480px) single-column rule still applies), touch targets stay large, and nothing overflows or clips. Fix any responsive issues in docs/css/styles.css.",
     "Accessibility pass: confirm visible :focus-visible rings on every interactive element (tiles, answers, buttons, inputs, sound toggle), sensible color contrast for text on gradients/accent fills, aria-labels present on icon-only controls (speaker button, sound toggle), and that prefers-reduced-motion fully neutralizes motion. Fix gaps found.",
