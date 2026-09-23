@@ -171,8 +171,10 @@ body {
 }
 
 .big-button--go {
-  --btn-fill: var(--go);
-  --btn-edge: #4aa657;
+  /* Slightly deeper green than the --go token so the white button label meets
+     the WCAG large-text contrast threshold. */
+  --btn-fill: #3E9E4C;
+  --btn-edge: #2f7d3a;
 }
 
 /* --- Profile screen --- */
@@ -570,7 +572,9 @@ body {
 }
 
 .feedback--correct {
-  background: var(--go);
+  /* Darker green than the --go tile/button fill so the white '🎉 Brawo!' text
+     clears the WCAG large-text contrast threshold (>= 3:1). */
+  background: #2F9E44;
 }
 
 .feedback--retry {
@@ -673,7 +677,8 @@ body {
 .summary-points {
   font-size: 1.7rem;
   font-weight: 800;
-  color: var(--go);
+  /* Deeper green than --go so the points read clearly on the white card. */
+  color: #2F9E44;
   margin: 0;
 }
 
@@ -833,8 +838,8 @@ body {
 
 .sound-toggle {
   position: fixed;
-  top: var(--space-3);
-  right: var(--space-3);
+  top: max(var(--space-3), env(safe-area-inset-top));
+  right: max(var(--space-3), env(safe-area-inset-right));
   z-index: 50;
   min-height: 52px;
   min-width: 52px;
@@ -1036,6 +1041,29 @@ input:focus-visible,
 
 /* --- Responsive --- */
 
+/* Below the centered 900px layout the app fills the viewport, so the fixed
+   sound toggle in the top-right corner can sit close to content. Reserve a
+   little headroom at the top of each screen so headings and the greeting card
+   never slide underneath it. */
+@media (max-width: 932px) {
+  .screen {
+    padding-top: 64px;
+  }
+}
+
+/* Tablet: keep two-up tiles/answers but make sure nothing crowds the toggle. */
+@media (max-width: 768px) {
+  .home-header {
+    padding: var(--space-4);
+  }
+
+  .progress-banner-stat {
+    max-width: none;
+  }
+}
+
+/* Phone: single-column reflow for tiles, answers, and the module/badge rows.
+   Touch targets stay large; nothing overflows. */
 @media (max-width: 480px) {
   .avatar-grid {
     grid-template-columns: repeat(4, 1fr);
@@ -1044,5 +1072,25 @@ input:focus-visible,
   .tile-grid,
   .answer-grid {
     grid-template-columns: 1fr;
+  }
+
+  .badge-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .home-header {
+    /* Stack avatar over greeting on very narrow screens to avoid squeezing the
+       title beside the fixed toggle. */
+    flex-wrap: wrap;
+  }
+
+  .module-card {
+    /* Let the star row wrap under the title instead of overflowing. */
+    flex-wrap: wrap;
   }
 }

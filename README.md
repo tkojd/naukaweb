@@ -89,15 +89,81 @@ wzmocnieniach**. Poprawna odpowiedź wywołuje radosną informację zwrotną, a 
 zachętę do kolejnej próby, bez kar i bez punktów ujemnych. Dziecko samo wybiera moduł i
 tempo, co wspiera samodzielność i poczucie sprawczości w duchu pedagogiki Montessori.
 
-## 3. Stos technologiczny
+## 3. Wygląd i odczucia (nowa oprawa wizualna)
+
+Interfejs został odświeżony w duchu przyjaznych aplikacji edukacyjnych dla dzieci
+(styl **Duolingo / Khan Academy Kids**), ale z umiarem - ma być nowocześnie i naprawdę
+ładnie, bez maskotki i bez przytłaczania uwagi dziecka.
+
+### Kolory, tło i przyciski
+
+- **Miękkie, kolorowe gradienty** w tle całej strony oraz jasne, zaokrąglone karty
+  (duże promienie rogów, delikatne cienie) dla czytelnej, przyjaznej kompozycji.
+- **Zaokrąglone przyciski w stylu 3D** - pełny kolor akcentu z ciemniejszą dolną
+  krawędzią, która "wciska się" przy dotknięciu, co daje wyraźne, satysfakcjonujące
+  wrażenie kliknięcia.
+- **Kolory akcentów przypisane do modułów**, spójnie użyte na kafelkach, ekranie lekcji
+  i kartach postępów: Kolory `#FF6B6B`, Litery `#4D96FF`, Cyfry `#6BCB77`,
+  Angielski `#FFA45B`, Postępy `#B983FF`.
+- **Duże pola dotyku** (co najmniej ~72 px) i **widoczna obwódka fokusu** na każdym
+  elemencie interaktywnym (kafelki, odpowiedzi, przyciski, pole imienia, wybór
+  awatara, przycisk głośnika, przełącznik dźwięku), aby aplikacja była wygodna zarówno
+  pod palcem, jak i z klawiatury.
+- **Responsywny układ** działa czytelnie na komputerze, tablecie i telefonie - kafelki,
+  siatka odpowiedzi i siatka odznak zwijają się do jednej kolumny na wąskich ekranach,
+  a nic nie wychodzi poza ekran ani nie zachodzi na stały przełącznik dźwięku.
+
+### Subtelne animacje (z umiarem)
+
+Ruch jest delikatny i celowy, nigdy nachalny:
+
+- **Płynne przejścia** między ekranami i pytaniami (delikatne pojawianie się z lekkim
+  przesunięciem).
+- **Świętowanie poprawnej odpowiedzi**: krótki "pop" na komunikacie oraz drobne
+  iskierki, przy zachowaniu dokładnego tekstu `🎉 Brawo!`. Błędna odpowiedź daje
+  łagodne, nienachalne "potrząśnięcie" wybranego kafelka i komunikat
+  `🙂 Spróbuj jeszcze raz`.
+- **Animowane liczniki** punktów (odliczanie od zera), **pasek postępu lekcji**
+  wypełniający się wraz z kolejnymi pytaniami oraz **sekwencyjne pojawianie się
+  gwiazdek** na ekranie podsumowania.
+
+Wszystkie animacje **respektują ustawienie `prefers-reduced-motion`** - gdy użytkownik
+poprosi system o ograniczenie ruchu, przejścia, przekształcenia i efekty są w pełni
+neutralizowane (treść pozostaje od razu widoczna).
+
+### Krótkie dźwięki efektowe i wyciszanie
+
+- Aplikacja generuje **krótkie, ciche dźwięki efektowe przez Web Audio API**
+  (oscylatory), bez żadnych plików audio: `playCorrect()` (delikatny dwutonowy sygnał
+  przy poprawnej odpowiedzi) oraz `playBadge()` (krótka radosna melodyjka przy nowej
+  odznace i na podsumowaniu lekcji). Dźwięki są krótkie i stonowane - z umiarem.
+- **Przełącznik dźwięku (🔊 / 🔇)** jest dostępny na każdym ekranie w rogu, ma polską
+  etykietę dla czytników ekranu i **stan zapamiętywany między odświeżeniami strony**.
+  Wyciszenie obejmuje **zarówno dźwięki efektowe, jak i istniejącą wymowę Web Speech**
+  (obie warstwy sprawdzają ten sam przełącznik).
+- Efekty dźwiękowe **degradują się bezpiecznie** (stają się no-op), gdy Web Audio API
+  nie jest dostępne, i nigdy nie zgłaszają błędu.
+
+### Zależność od czcionki i tryb offline
+
+Nagłówki i tekst korzystają z zaokrąglonej, przyjaznej czcionki webowej z **Google Fonts**
+(**Fredoka** oraz **Nunito**), ładowanej z `preconnect` dla szybszego startu. Jeśli sieć
+lub CDN są niedostępne, aplikacja płynnie przechodzi na **zaokrągloną czcionkę systemową**
+(`ui-rounded`, `Segoe UI Rounded`, `SF Pro Rounded`, `system-ui`), więc **wygląda dobrze
+także offline** i nie traci swojego zaokrąglonego charakteru.
+
+## 4. Stos technologiczny
 
 - **Czysty, statyczny HTML/CSS/JavaScript** - moduły ES, **bez kroku budowania** i bez
   frameworka. Pliki z katalogu `docs/` są serwowane wprost jako statyczne zasoby.
 - **Web Speech API** (`window.speechSynthesis`) - wymowa na głos (pl-PL dla treści polskich,
   en-US dla modułu Angielski). Warstwa mowy degraduje się łagodnie (staje się no-op), gdy
   API nie jest dostępne.
-- **localStorage** - trwały zapis danych per profil (profile, punkty, gwiazdki, odznaki oraz
-  stan powtórek Leitnera).
+- **Web Audio API** - krótkie dźwięki efektowe generowane oscylatorami (bez plików audio),
+  wspólnie wyciszane z mową przez ten sam przełącznik dźwięku. Bezpieczny no-op, gdy API
+  nie jest dostępne.
+- **localStorage** - trwały zapis danych per profil (profile, punkty, gwiazdki, odznaki,
+  stan powtórek Leitnera) oraz ustawienie wyciszenia dźwięku.
 - **Vitest** - testy jednostkowe czystej logiki (harmonogram Leitnera, grywalizacja, seria
   dni). Logika domenowa w `docs/js/logic/` jest wolna od DOM i globali przeglądarki, więc
   importuje się tak samo w przeglądarce i w Node.
@@ -106,10 +172,10 @@ Struktura projektu odwzorowuje warstwy natywnej aplikacji:
 
 ```
 docs/
-  index.html            # punkt wejścia aplikacji
-  css/styles.css        # style
+  index.html            # punkt wejścia (czcionka Google Fonts + preconnect)
+  css/styles.css        # style: tokeny, gradienty, przyciski 3D, animacje, fokus
   js/
-    app.js              # bootstrap i router widoków
+    app.js              # bootstrap, router widoków, stały przełącznik dźwięku
     logic/              # czysta logika domenowa (testowana Vitest)
       content.js        # katalog treści (Kolory/Litery/Cyfry/Angielski)
       srs.js            # harmonogram powtórek Leitnera
@@ -120,7 +186,9 @@ docs/
       storage.js
       progressService.js
     ui/                 # widoki i kontroler lekcji
-    audio/speech.js     # obsługa Web Speech API (z bezpiecznym fallbackiem)
+    audio/
+      speech.js         # obsługa Web Speech API (z bezpiecznym fallbackiem)
+      soundEffects.js   # krótkie dźwięki Web Audio (playCorrect/playBadge)
 tests/                  # testy Vitest dla warstwy logic/
 package.json            # tylko narzędzia deweloperskie (Vitest)
 ```
@@ -134,7 +202,7 @@ na serwer. Dzięki temu aplikację można wdrożyć bezpośrednio na **GitHub Pa
 Node.js i npm są potrzebne **wyłącznie** do uruchomienia testów Vitest, a nie do działania
 samej aplikacji.
 
-## 4. Jak uruchomić lokalnie
+## 5. Jak uruchomić lokalnie
 
 Aplikacja nie wymaga instalacji - to statyczne pliki. Wystarczy jeden z poniższych sposobów:
 
@@ -158,7 +226,7 @@ npm install
 npm test
 ```
 
-## 5. Hosting
+## 6. Hosting
 
 Aplikacja jest hostowana na **GitHub Pages** ze źródłem:
 
@@ -168,9 +236,11 @@ Aplikacja jest hostowana na **GitHub Pages** ze źródłem:
 
 Ponieważ strona działa pod podścieżką `/naukaweb/`, **wszystkie ścieżki do zasobów są
 względne** (nigdy nie zaczynają się od `/`). Dzięki temu aplikacja działa poprawnie zarówno
-na GitHub Pages, jak i po otwarciu lokalnie z dysku.
+na GitHub Pages, jak i po otwarciu lokalnie z dysku. W katalogu `docs/` znajduje się też
+pusty plik **`.nojekyll`**, który wyłącza przetwarzanie przez Jekyll i zapewnia, że pliki
+są serwowane dokładnie tak, jak leżą w repozytorium.
 
-## 6. Ograniczenia
+## 7. Ograniczenia
 
 - **Głosy Web Speech API zależą od przeglądarki i systemu operacyjnego.** Dostępność i
   jakość głosów (w tym głosu pl-PL) różni się między urządzeniami - na niektórych systemach
@@ -178,6 +248,8 @@ na GitHub Pages, jak i po otwarciu lokalnie z dysku.
   pozostaje w pełni używalna.
 - **Brak backendu.** Nie ma serwera ani konta użytkownika.
 - **Działa offline** po pierwszym załadowaniu (statyczne pliki nie wymagają połączenia).
+  Zaokrąglona czcionka z Google Fonts jest opcjonalna - jeśli CDN jest niedostępny,
+  aplikacja korzysta z zaokrąglonej czcionki systemowej i nadal wygląda spójnie.
 - **Dane trzymane lokalnie.** Postęp jest zapisywany w `localStorage` danej przeglądarki,
   więc nie przenosi się między urządzeniami ani przeglądarkami, a wyczyszczenie danych
   przeglądarki go usuwa.
