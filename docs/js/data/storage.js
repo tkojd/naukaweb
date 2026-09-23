@@ -4,6 +4,8 @@
 // can be read/written as one JSON blob. Framework-free; degrades gracefully when
 // window.localStorage is unavailable or the stored JSON is corrupt.
 
+import { AGE_LEVELS } from '../logic/models.js';
+
 /** Single top-level key holding the entire app state. */
 const STORAGE_KEY = 'naukaweb.v1';
 
@@ -11,7 +13,7 @@ const STORAGE_KEY = 'naukaweb.v1';
  * Shape of the persisted blob:
  * {
  *   activeProfileId: string|null,
- *   profiles: [{ id, name, avatar }],
+ *   profiles: [{ id, name, avatar, level? }],  // level is an AGE_LEVELS value (optional)
  *   progress: {
  *     [profileId]: {
  *       reviewStates: { [itemId]: { itemId, box, dueTimestampMillis, lastReviewedMillis, correctStreak, moduleType } },
@@ -25,6 +27,48 @@ const STORAGE_KEY = 'naukaweb.v1';
 
 function emptyState() {
   return { activeProfileId: null, profiles: [], progress: {}, muted: false };
+}
+
+/**
+ * The default age level for a profile that predates the age-band feature. LATE
+ * is chosen because its content set includes the reading/spelling task types, so
+ * no existing content is hidden from legacy profiles. This is only a READ-time
+ * default; the stored blob is never rewritten unless the user changes it, so the
+ * migration stays non-destructive.
+ */
+const DEFAULT_LEVEL = AGE_LEVELS.LATE;
+
+/** True if `level` is a recognised AGE_LEVELS value. */
+function isValidLevel(level) {
+  return level === AGE_LEVELS.EARLY || level === AGE_LEVELS.LATE;
+}
+
+/**
+ * Non-destructive migration of a single stored profile: keep every existing
+ * field (id, name, avatar, and any progress that lives elsewhere) and only
+ * normalise the optional `level`. Missing/invalid levels are left absent on the
+ * returned object so nothing is silently rewritten; callers use profileLevel()
+ * to resolve a usable value.
+ */
+function migrateProfile(raw) {
+  if (!raw || typeof raw !== 'object') return raw;
+  const profile = {
+    id: raw.id,
+    name: raw.name,
+    avatar: raw.avatar
+  };
+  if (isValidLevel(raw.level)) profile.level = raw.level;
+  return profile;
+}
+
+/**
+ * Resolve the effective age level for a profile, applying the read-time default
+ * for legacy profiles that never chose a band.
+ * @param {{level?:string}|null} profile
+ * @returns {'EARLY'|'LATE'}
+ */
+export function profileLevel(profile) {
+  return profile && isValidLevel(profile.level) ? profile.level : DEFAULT_LEVEL;
 }
 
 /** True if a working localStorage is available. */
@@ -52,7 +96,9 @@ function readState() {
     if (!parsed || typeof parsed !== 'object') return emptyState();
     return {
       activeProfileId: parsed.activeProfileId ?? null,
-      profiles: Array.isArray(parsed.profiles) ? parsed.profiles : [],
+      // Migrate profiles on read so pre-age-band blobs still load intact: only
+      // the optional `level` is normalised, no profile or progress is dropped.
+      profiles: Array.isArray(parsed.profiles) ? parsed.profiles.map(migrateProfile) : [],
       progress: parsed.progress && typeof parsed.progress === 'object' ? parsed.progress : {},
       // Preserve the persisted mute flag so it survives a reload.
       muted: parsed.muted === true
@@ -109,16 +155,36 @@ export function listProfiles() {
  * Create a new learner profile and persist it.
  * @param {string} name learner's name (imię).
  * @param {string} avatar emoji avatar glyph.
- * @returns {{id:string, name:string, avatar:string}}
+ * @param {('EARLY'|'LATE')} [level] optional age band (AGE_LEVELS). Omitted or
+ *   invalid values leave the profile without a stored level (treated as the
+ *   read-time default), keeping createProfile(name, avatar) callable.
+ * @returns {{id:string, name:string, avatar:string, level?:string}}
  */
-export function createProfile(name, avatar) {
+export function createProfile(name, avatar, level) {
   const state = readState();
   const profile = {
     id: newId(),
     name: (name || '').trim() || 'Uczeń',
     avatar: avatar || '🐱'
   };
+  if (isValidLevel(level)) profile.level = level;
   state.profiles.push(profile);
+  writeState(state);
+  return profile;
+}
+
+/**
+ * Update a profile's age level. Ignores unknown ids and invalid levels.
+ * @param {string} id profile id.
+ * @param {('EARLY'|'LATE')} level an AGE_LEVELS value.
+ * @returns {{id:string, name:string, avatar:string, level?:string}|null}
+ */
+export function updateProfileLevel(id, level) {
+  if (!isValidLevel(level)) return getProfile(id);
+  const state = readState();
+  const profile = state.profiles.find((p) => p.id === id);
+  if (!profile) return null;
+  profile.level = level;
   writeState(state);
   return profile;
 }

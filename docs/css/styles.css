@@ -646,6 +646,321 @@ body {
   animation: gentle-nudge 0.4s ease both;
 }
 
+/* Emoji + label stacked inside a standard answer tile (multiple choice / listen). */
+.answer-emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.answer-label {
+  display: block;
+}
+
+.answer--number {
+  font-size: 2.4rem;
+}
+
+/* ===== New task-type components ===========================================
+   All reuse the existing tokens (radius, shadow, accent, ~72px touch targets)
+   so the new tasks feel like the classic multiple-choice screen. */
+
+/* --- Listen & choose --- */
+.prompt-card--listen {
+  gap: 16px;
+}
+
+.listen-big-button {
+  background: var(--lesson-accent, var(--secondary));
+  color: #fff;
+  font-size: 3.2rem;
+  min-width: 96px;
+  min-height: 96px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 6px 0 color-mix(in srgb, var(--lesson-accent, var(--secondary)) 70%, #000),
+    var(--shadow-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.listen-big-button:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--lesson-accent, var(--secondary)) 70%, #000),
+    var(--shadow-sm);
+}
+
+.prompt-listen-hint {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+/* --- Match pairs (tap word then image) --- */
+.match-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 4px;
+  color: color-mix(in srgb, var(--lesson-accent) 80%, #000);
+}
+
+.match-board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.match-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.match-card {
+  min-height: 72px;
+  background: var(--surface);
+  border: 3px solid color-mix(in srgb, var(--lesson-accent, var(--primary)) 18%, #e6ebf5);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--lesson-accent, var(--primary)) 22%, #cfd8ea),
+    var(--shadow-sm);
+  color: var(--ink);
+  font-size: 1.4rem;
+  font-weight: 800;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast),
+    border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.match-emoji {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.match-swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  box-shadow: var(--shadow-sm);
+}
+
+.match-card--selected {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, #fff);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 30%, transparent), var(--shadow);
+  transform: translateY(-1px);
+}
+
+.match-card--matched {
+  border-color: var(--go);
+  background: color-mix(in srgb, var(--go) 16%, #fff);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--go) 40%, #cfd8ea), var(--shadow-sm);
+  cursor: default;
+  opacity: 0.85;
+}
+
+/* --- Spell word (letter tiles) --- */
+.spell-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  min-height: 64px;
+  align-items: center;
+}
+
+.spell-slots-empty {
+  color: var(--ink-soft);
+  font-size: 2rem;
+  letter-spacing: 4px;
+}
+
+.spell-slot {
+  min-width: 44px;
+  min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 800;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--lesson-accent) 14%, #fff);
+  border: 3px solid color-mix(in srgb, var(--lesson-accent) 35%, transparent);
+  color: color-mix(in srgb, var(--lesson-accent) 80%, #000);
+}
+
+.letter-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.letter-tile {
+  min-width: 64px;
+  min-height: 64px;
+  font-size: 2rem;
+  font-weight: 800;
+  background: var(--surface);
+  border: 3px solid color-mix(in srgb, var(--lesson-accent, var(--primary)) 22%, #e6ebf5);
+  border-radius: var(--radius-md);
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--lesson-accent, var(--primary)) 22%, #cfd8ea),
+    var(--shadow);
+  color: var(--ink);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.letter-tile:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--lesson-accent, var(--primary)) 22%, #cfd8ea),
+    var(--shadow-sm);
+}
+
+.letter-tile--used,
+.letter-tile:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.spell-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* --- True / false --- */
+.prompt-card--truefalse .prompt-word {
+  text-align: center;
+}
+
+.truefalse-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.truefalse-button {
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  border-radius: var(--radius-lg);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.truefalse-button:active {
+  transform: translateY(4px);
+}
+
+.truefalse-button--true {
+  background: #2F9E44;
+  box-shadow: 0 5px 0 #247734, var(--shadow);
+}
+
+.truefalse-button--false {
+  background: #E8590C;
+  box-shadow: 0 5px 0 #b8460a, var(--shadow);
+}
+
+.truefalse-emoji {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+/* --- Count & choose --- */
+.prompt-card--count {
+  gap: 16px;
+}
+
+.count-hint {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.count-glyphs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.count-glyph {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+/* --- Find color in a scene --- */
+.prompt-scene-emoji {
+  font-size: clamp(3rem, 12vw, 5rem);
+  letter-spacing: 4px;
+}
+
+.prompt-scene-desc {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.prompt-find {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+/* --- Age-band selector (profile create form) --- */
+.age-band-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.age-band {
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--surface-alt);
+  border: 3px solid transparent;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  font-weight: 800;
+  transition: transform var(--transition-fast), border-color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.age-band:hover {
+  transform: translateY(-2px);
+}
+
+.age-band--selected {
+  background: color-mix(in srgb, var(--primary) 18%, #fff);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 30%, transparent), var(--shadow);
+  transform: translateY(-1px);
+}
+
+.age-band-emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.age-band-label {
+  font-size: 1.3rem;
+}
+
 /* Sparkle celebration layer over the correct-feedback banner. */
 .sparkle-layer {
   position: absolute;
@@ -1027,6 +1342,11 @@ input:focus-visible,
   .answer,
   .profile-card,
   .avatar-choice,
+  .age-band,
+  .match-card,
+  .letter-tile,
+  .truefalse-button,
+  .listen-big-button,
   .sound-toggle {
     transform: none !important;
   }
@@ -1078,6 +1398,12 @@ input:focus-visible,
   .tile-grid,
   .answer-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* Keep two columns for count options and true/false so buttons stay reachable
+     side by side, but let the match board and count numbers wrap comfortably. */
+  .count-options {
+    grid-template-columns: 1fr 1fr;
   }
 
   .badge-grid {

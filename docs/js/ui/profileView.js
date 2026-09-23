@@ -3,8 +3,15 @@
 // chooser). Selecting/creating persists the active profile and routes home.
 
 import { el, clear } from './dom.js';
+import { AGE_LEVELS } from '../logic/models.js';
 import * as storage from '../data/storage.js';
 import { playTap } from '../audio/soundEffects.js';
+
+/** Age-band choices offered on the create form (Polish labels). */
+const AGE_BANDS = [
+  { level: AGE_LEVELS.EARLY, label: '4-6 lat', emoji: '🧸' },
+  { level: AGE_LEVELS.LATE, label: '7-10 lat', emoji: '🎒' }
+];
 
 /** Emoji avatars offered to new profiles (child-friendly animals). */
 const AVATARS = ['🐱', '🐶', '🐰', '🦊', '🐻', '🐼', '🐨', '🦁', '🐯', '🐸', '🐵', '🐷', '🐮', '🐔', '🦄'];
@@ -104,6 +111,37 @@ function buildCreateForm(onProfileReady) {
   }
   wrap.appendChild(grid);
 
+  // --- age band selector -----------------------------------------------------
+  wrap.appendChild(
+    el('p', { className: 'create-hint', text: 'Ile masz lat?' })
+  );
+
+  let selectedLevel = AGE_BANDS[0].level;
+  const bandRow = el('div', { className: 'age-band-row', role: 'group', 'aria-label': 'Wiek' });
+  const bandButtons = [];
+  for (const band of AGE_BANDS) {
+    const btn = el('button', {
+      className: 'age-band touch-target',
+      type: 'button',
+      'aria-pressed': String(band.level === selectedLevel),
+      onClick: () => {
+        selectedLevel = band.level;
+        bandButtons.forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle('age-band--selected', on);
+          b.setAttribute('aria-pressed', String(on));
+        });
+      }
+    }, [
+      el('span', { className: 'age-band-emoji', text: band.emoji }),
+      el('span', { className: 'age-band-label', text: band.label })
+    ]);
+    if (band.level === selectedLevel) btn.classList.add('age-band--selected');
+    bandButtons.push(btn);
+    bandRow.appendChild(btn);
+  }
+  wrap.appendChild(bandRow);
+
   const nameInput = el('input', {
     className: 'name-input',
     type: 'text',
@@ -120,7 +158,7 @@ function buildCreateForm(onProfileReady) {
       text: 'Zaczynamy! 🚀',
       onClick: () => {
         playTap(); // resumes the AudioContext on a real user gesture
-        const profile = storage.createProfile(nameInput.value, selectedAvatar);
+        const profile = storage.createProfile(nameInput.value, selectedAvatar, selectedLevel);
         storage.setActiveProfileId(profile.id);
         onProfileReady();
       }
