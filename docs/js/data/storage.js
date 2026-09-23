@@ -24,7 +24,7 @@ const STORAGE_KEY = 'naukaweb.v1';
  */
 
 function emptyState() {
-  return { activeProfileId: null, profiles: [], progress: {} };
+  return { activeProfileId: null, profiles: [], progress: {}, muted: false };
 }
 
 /** True if a working localStorage is available. */
@@ -53,7 +53,9 @@ function readState() {
     return {
       activeProfileId: parsed.activeProfileId ?? null,
       profiles: Array.isArray(parsed.profiles) ? parsed.profiles : [],
-      progress: parsed.progress && typeof parsed.progress === 'object' ? parsed.progress : {}
+      progress: parsed.progress && typeof parsed.progress === 'object' ? parsed.progress : {},
+      // Preserve the persisted mute flag so it survives a reload.
+      muted: parsed.muted === true
     };
   } catch {
     // Corrupt JSON or read error: start clean rather than crashing.

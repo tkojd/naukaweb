@@ -13,6 +13,43 @@ import { renderProfileScreen } from './ui/profileView.js';
 import { renderHomeScreen } from './ui/homeView.js';
 import { renderLessonScreen } from './ui/lessonView.js';
 import { renderProgressScreen } from './ui/progressView.js';
+import { el } from './ui/dom.js';
+import { stop as stopSpeech } from './audio/speech.js';
+
+// --- Persistent sound toggle -------------------------------------------------
+// Rendered once into document.body (outside #app) so it stays visible on every
+// screen and survives screen swaps. Controls BOTH effect sounds and speech, which
+// both read storage.isMuted(). State persists across reloads via storage.setMuted().
+
+let soundToggleButton = null;
+
+function updateSoundToggle() {
+  if (!soundToggleButton) return;
+  const muted = storage.isMuted();
+  soundToggleButton.textContent = muted ? '🔇' : '🔊';
+  soundToggleButton.setAttribute('aria-pressed', String(muted));
+  soundToggleButton.setAttribute(
+    'aria-label',
+    muted ? 'Włącz dźwięki' : 'Wycisz dźwięki'
+  );
+  soundToggleButton.setAttribute('title', muted ? 'Włącz dźwięki' : 'Wycisz dźwięki');
+}
+
+function mountSoundToggle() {
+  if (soundToggleButton || typeof document === 'undefined' || !document.body) return;
+  soundToggleButton = el('button', {
+    type: 'button',
+    className: 'sound-toggle touch-target',
+    onClick: () => {
+      const nextMuted = !storage.isMuted();
+      storage.setMuted(nextMuted);
+      if (nextMuted) stopSpeech(); // stop any in-flight speech immediately
+      updateSoundToggle();
+    }
+  });
+  updateSoundToggle();
+  document.body.appendChild(soundToggleButton);
+}
 
 const VALID_MODULES = new Set(Object.values(LEARNING_MODULES));
 
@@ -78,8 +115,13 @@ function render() {
   }
 }
 
-window.addEventListener('hashchange', render);
-window.addEventListener('DOMContentLoaded', render);
+function boot() {
+  mountSoundToggle();
+  render();
+}
 
-// If the module loads after DOMContentLoaded already fired, render immediately.
-if (document.readyState !== 'loading') render();
+window.addEventListener('hashchange', render);
+window.addEventListener('DOMContentLoaded', boot);
+
+// If the module loads after DOMContentLoaded already fired, boot immediately.
+if (document.readyState !== 'loading') boot();

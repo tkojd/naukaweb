@@ -3,15 +3,64 @@
    never punitive. */
 
 :root {
+  /* --- Color palette --- */
   --bg: #FFF8E7;
+  --bg-gradient-1: #E9F3FF; /* top: soft sky */
+  --bg-gradient-2: #FFF3FB; /* middle: warm blush */
+  --bg-gradient-3: #EAFBEF; /* bottom: mint */
   --surface: #FFFFFF;
+  --surface-alt: #F5F7FB;
   --ink: #2B2B3A;
+  --ink-soft: #5B5B6E;
+
+  /* Roles */
   --primary: #4D96FF;
   --secondary: #B983FF;
   --go: #6BCB77;
   --retry: #FFD166;
-  --shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-  --radius: 24px;
+
+  /* Per-module accent colors (reused from the home tiles) */
+  --accent-colors: #FF6B6B; /* Kolory */
+  --accent-letters: #4D96FF; /* Litery */
+  --accent-digits: #6BCB77; /* Cyfry */
+  --accent-english: #FFA45B; /* Angielski */
+  --accent-progress: #B983FF; /* Postępy */
+
+  /* --- Spacing scale --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* --- Radius scale --- */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius: 24px; /* default / large, kept for existing rules */
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+
+  /* --- Elevation / shadow scale --- */
+  --shadow-sm: 0 2px 6px rgba(31, 41, 71, 0.10);
+  --shadow: 0 6px 16px rgba(31, 41, 71, 0.14);
+  --shadow-md: 0 10px 24px rgba(31, 41, 71, 0.16);
+  --shadow-lg: 0 18px 40px rgba(31, 41, 71, 0.20);
+
+  /* --- Focus ring --- */
+  --focus-ring: #1B3A6B;
+  --focus-ring-offset: 3px;
+
+  /* --- Typography --- */
+  --font-display: 'Fredoka', 'Nunito', ui-rounded, 'Segoe UI Rounded', 'SF Pro Rounded', system-ui, sans-serif;
+  --font-body: 'Fredoka', 'Nunito', ui-rounded, 'Segoe UI Rounded', 'SF Pro Rounded', system-ui, sans-serif;
+
+  /* --- Motion --- */
+  --transition-fast: 0.12s ease;
+  --transition: 0.18s ease;
+
+  /* --- Sizing --- */
   --touch: 72px;
 }
 
@@ -26,8 +75,15 @@ body {
 }
 
 body {
-  font-family: 'Comic Sans MS', 'Baloo 2', 'Nunito', 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg);
+  font-family: var(--font-body);
+  /* Cheerful, soft full-page gradient. Fixed so it stays put while scrolling. */
+  background: linear-gradient(
+    160deg,
+    var(--bg-gradient-1) 0%,
+    var(--bg-gradient-2) 48%,
+    var(--bg-gradient-3) 100%
+  );
+  background-attachment: fixed;
   color: var(--ink);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -47,7 +103,9 @@ body {
 }
 
 .screen-title {
+  font-family: var(--font-display);
   font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 700;
   text-align: center;
   margin: 8px 0;
   color: var(--ink);
@@ -64,34 +122,57 @@ body {
   font-family: inherit;
 }
 
+/* Duolingo/Khan-style "3D" button: solid accent fill with a darker bottom edge
+   (faked via box-shadow) that compresses on press. Class names and touch sizes are
+   preserved so existing view JS keeps working unchanged. */
 .big-button {
+  --btn-fill: var(--primary);
+  --btn-edge: #2f6fd6; /* darker bottom edge for the primary fill */
   min-height: var(--touch);
   width: 100%;
+  font-family: var(--font-display);
   font-size: clamp(1.2rem, 3.5vw, 1.6rem);
   font-weight: 700;
+  letter-spacing: 0.01em;
   color: #fff;
-  background: var(--primary);
+  background: var(--btn-fill);
   border: none;
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  /* bottom edge (3D depth) + soft drop shadow */
+  box-shadow: 0 6px 0 var(--btn-edge), var(--shadow-md);
   padding: 16px 20px;
-  transition: transform 0.08s ease, filter 0.15s ease;
-}
-
-.big-button:active {
-  transform: scale(0.97);
+  transform: translateY(0);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast),
+    filter var(--transition-fast);
 }
 
 .big-button:hover {
-  filter: brightness(1.05);
+  filter: brightness(1.04);
+}
+
+.big-button:active {
+  /* press down: sink toward the edge and shrink the depth */
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--btn-edge), var(--shadow-sm);
+}
+
+.big-button:disabled,
+.big-button[disabled] {
+  filter: grayscale(0.35);
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: translateY(0);
+  box-shadow: 0 6px 0 var(--btn-edge), var(--shadow-sm);
 }
 
 .big-button--secondary {
-  background: var(--secondary);
+  --btn-fill: var(--secondary);
+  --btn-edge: #8f57cf;
 }
 
 .big-button--go {
-  background: var(--go);
+  --btn-fill: var(--go);
+  --btn-edge: #4aa657;
 }
 
 /* --- Profile screen --- */
@@ -215,10 +296,16 @@ body {
   gap: 8px;
   min-height: 150px;
   color: #fff;
-  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
   padding: 20px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  transition: transform 0.08s ease;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .tile:active {
@@ -485,6 +572,149 @@ body {
 
 .badge-desc {
   font-size: 1rem;
+}
+
+/* --- Persistent sound toggle --- */
+
+.sound-toggle {
+  position: fixed;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 50;
+  min-height: 52px;
+  min-width: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid rgba(31, 41, 71, 0.08);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.sound-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.sound-toggle:active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.sound-toggle[aria-pressed='true'] {
+  background: var(--surface-alt);
+  color: var(--ink-soft);
+}
+
+/* --- Global accessibility layer --- */
+
+/* Strong, consistent focus ring for every interactive element (keyboard users). */
+:focus-visible {
+  outline: 4px solid var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 4px solid var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* --- Opt-in animation utilities (applied by later features via these classes) --- */
+
+@keyframes fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes correct-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes badge-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: var(--shadow);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: var(--shadow-lg);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: var(--shadow);
+  }
+}
+
+@keyframes count-up-bounce {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Opt-in helper classes: nothing animates until a feature adds these. */
+.anim-fade-slide-in {
+  animation: fade-slide-in 0.32s ease both;
+}
+
+.anim-correct-pop {
+  animation: correct-pop 0.4s ease both;
+}
+
+.anim-badge-pulse {
+  animation: badge-pulse 0.6s ease both;
+}
+
+.anim-count-up {
+  animation: count-up-bounce 0.35s ease both;
+}
+
+/* Respect users who prefer reduced motion: neutralize transitions and animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .big-button,
+  .tile,
+  .answer,
+  .sound-toggle {
+    transform: none !important;
+  }
 }
 
 /* --- Responsive --- */
