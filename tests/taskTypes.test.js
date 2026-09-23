@@ -251,7 +251,33 @@ describe('generateCountChoose', () => {
   it('accepts a countingTasks-style task object', () => {
     const spec = generateCountChoose({ task: { id: 'count_x', emoji: '⭐', count: 5 }, rng: seqRng([0.3, 0.6, 0.1]) });
     expect(spec.meta.glyphs.length).toBe(5);
-    expect(spec.item.id).toBe('count_x');
+    // The recorded item must be the REAL catalog digit (number_5), never a
+    // synthetic count_* item, so recording reinforces the actual digit and does
+    // not create an orphan NUMBERS review state that skews the Mistrz Cyfr badge.
+    expect(spec.item).not.toBeNull();
+    expect(spec.item.id).toBe('number_5');
+    expect(spec.item.moduleType).toBe(LEARNING_MODULES.NUMBERS);
+    expect(spec.item.prompt).toBe('5');
+  });
+
+  it('records the real number_N catalog item for an explicit count', () => {
+    const spec = generateCountChoose({ count: 3, emoji: '🍎', rng: seqRng([0.1, 0.4, 0.7]) });
+    // The recorded item is the real digit item, matching a member of `numbers`.
+    expect(spec.item).toBe(numberItems.find((n) => n.id === 'number_3'));
+    expect(spec.item.id).toBe('number_3');
+    // No synthetic count_* id is produced anywhere on the recorded item.
+    expect(spec.item.id.startsWith('count_')).toBe(false);
+  });
+
+  it('emits no orphan item (item null) when the count has no 0-9 catalog digit', () => {
+    // Counts outside 0-9 (e.g. 12) have no real catalog digit; item must be null so
+    // the UI skips recording and never writes an orphan NUMBERS review state.
+    const spec = generateCountChoose({ count: 12, emoji: '⭐', maxNumber: 15, rng: seqRng([0.2, 0.5, 0.8]) });
+    expect(spec.item).toBeNull();
+    expect(spec.meta.glyphs.length).toBe(12);
+    // The correct option is still present and exactly one option is correct.
+    expect(spec.options.some((o) => o.label === '12' && o.isCorrect)).toBe(true);
+    expect(exactlyOneCorrect(spec)).toBe(true);
   });
 });
 

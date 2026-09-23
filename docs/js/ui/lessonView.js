@@ -11,7 +11,7 @@
 
 import { el, clear, shuffle } from './dom.js';
 import { LEARNING_MODULES } from '../logic/models.js';
-import { itemsForLevel } from '../logic/content.js';
+import { itemsForLevel, allItems } from '../logic/content.js';
 import { buildLesson, TASK_TYPES, isSpellingCorrect } from '../logic/taskTypes.js';
 import { starsForLesson } from '../logic/gamification.js';
 import * as progressService from '../data/progressService.js';
@@ -199,34 +199,80 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
    */
   function resolveAnswer(spec, correct, feedback, optionEl, onCorrectCleanup) {
     if (answered) return;
-    const outcome = progressService.recordAnswer(profileId, spec.item, correct, Date.now());
+    // Most specs carry a real catalog item to record progress against. A few
+    // (e.g. a COUNT_CHOOSE task whose count has no matching 0-9 digit) legitimately
+    // have no catalog item; those still give positive feedback and advance, but
+    // must not write an orphan review state, so we skip recording when item is null.
+    const outcome = spec.item
+      ? progressService.recordAnswer(profileId, spec.item, correct, Date.now())
+      : { pointsAwarded: 0, newlyEarnedBadges: [] };
     if (correct) {
-      answered = true;
-      correctCount += 1;
-      points += outcome.pointsAwarded;
-      clear(feedback);
-      const banner = buildFeedbackBanner(true, outcome.newlyEarnedBadges);
-      feedback.appendChild(banner);
-
-      playCorrect();
-      if (!prefersReducedMotion()) banner.classList.add('anim-correct-pop');
-      addSparkles(feedback);
-
-      const newBadges = outcome.newlyEarnedBadges || [];
-      if (newBadges.length > 0) {
-        playBadge();
-        if (!prefersReducedMotion()) {
-          for (const b of banner.querySelectorAll('.feedback-badge')) {
-            b.classList.add('anim-badge-pulse');
-          }
-        }
-      }
-      if (typeof onCorrectCleanup === 'function') onCorrectCleanup();
+      celebrateCorrect(feedback, outcome.pointsAwarded, outcome.newlyEarnedBadges, onCorrectCleanup);
     } else {
       clear(feedback);
       feedback.appendChild(buildFeedbackBanner(false, []));
       nudge(optionEl);
     }
+  }
+
+  /**
+   * Shared positive-feedback celebration used once per resolved question: mark the
+   * question answered, tally the (already-summed) points, show the '🎉 Brawo!'
+   * banner + any newly earned badges, play sounds/animations, and run cleanup.
+   */
+  function celebrateCorrect(feedback, pointsAwarded, newlyEarnedBadges, onCorrectCleanup) {
+    answered = true;
+    correctCount += 1;
+    points += pointsAwarded || 0;
+    clear(feedback);
+    const banner = buildFeedbackBanner(true, newlyEarnedBadges);
+    feedback.appendChild(banner);
+
+    playCorrect();
+    if (!prefersReducedMotion()) banner.classList.add('anim-correct-pop');
+    addSparkles(feedback);
+
+    const newBadges = newlyEarnedBadges || [];
+    if (newBadges.length > 0) {
+      playBadge();
+      if (!prefersReducedMotion()) {
+        for (const b of banner.querySelectorAll('.feedback-badge')) {
+          b.classList.add('anim-badge-pulse');
+        }
+      }
+    }
+    if (typeof onCorrectCleanup === 'function') onCorrectCleanup();
+  }
+
+  /**
+   * Resolve a completed MATCH_PAIRS game as ONE question, but record EVERY matched
+   * pair's catalog item through progressService so each practiced word/image gets
+   * Leitner/points/streak credit (not just the first pair). We record each pair,
+   * aggregate the awarded points, union any newly earned badges, then celebrate once.
+   */
+  function resolveMatchGame(spec, feedback, onCorrectCleanup) {
+    if (answered) return;
+    const now = Date.now();
+    const pairs = (spec.meta && spec.meta.pairs) || [];
+    let awarded = 0;
+    const badgeById = new Map();
+    let recordedAny = false;
+    for (const pair of pairs) {
+      const item = allItems.find((it) => it.id === pair.itemId);
+      if (!item) continue;
+      recordedAny = true;
+      const outcome = progressService.recordAnswer(profileId, item, true, now);
+      awarded += outcome.pointsAwarded || 0;
+      for (const b of outcome.newlyEarnedBadges || []) badgeById.set(b.id, b);
+    }
+    // Fall back to the spec's primary item if the pairs did not resolve to catalog
+    // items (defensive; keeps a completed game rewarding at least once).
+    if (!recordedAny && spec.item) {
+      const outcome = progressService.recordAnswer(profileId, spec.item, true, now);
+      awarded += outcome.pointsAwarded || 0;
+      for (const b of outcome.newlyEarnedBadges || []) badgeById.set(b.id, b);
+    }
+    celebrateCorrect(feedback, awarded, [...badgeById.values()], onCorrectCleanup);
   }
 
   /** Gentle, non-alarming wrong-tap nudge (reduced-motion safe via CSS). */
@@ -367,8 +413,9 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
 
     function tryResolve() {
       if (matchedCount >= totalPairs && totalPairs > 0) {
-        // Whole matching game counts as one correct answer for progress.
-        resolveAnswer(spec, true, feedback, null, () => appendNext(host));
+        // The whole matching game is one question, but every matched pair's item
+        // is recorded so each practiced word/image earns Leitner/points/streak credit.
+        resolveMatchGame(spec, feedback, () => appendNext(host));
       }
     }
 

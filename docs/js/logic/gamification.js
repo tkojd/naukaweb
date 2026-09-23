@@ -23,6 +23,24 @@ export const WEEK_STREAK_DAYS = 7;
 export const MASTERED_BOX = 5;
 
 /**
+ * Frozen mastery denominators for the module-mastery badges, pinned to the
+ * ORIGINAL core set sizes shipped in v1 (10 basic colors, the 32 Polish letters,
+ * the 10 digits 0-9). The content expansion grew some modules (e.g. colors 10 -> 20),
+ * but the "Mistrz *" badges intentionally reward mastering the CORE set so a child
+ * who mastered the original set keeps the badge and does not have to master every
+ * later-added shade/extra to hold it. Callers pass these to evaluateBadges via
+ * `snapshot.masteryTargetsByModule`; when a target is absent the evaluator falls
+ * back to `snapshot.totalItemsByModule` (preserving legacy behavior for callers
+ * that do not supply frozen targets).
+ * @type {Readonly<Object<string, number>>}
+ */
+export const MODULE_MASTERY_TARGETS = Object.freeze({
+  [LEARNING_MODULES.COLORS]: 10,
+  [LEARNING_MODULES.POLISH_LETTERS]: 32,
+  [LEARNING_MODULES.NUMBERS]: 10
+});
+
+/**
  * All badges the learner can earn, with their exact Polish display titles.
  * @type {ReadonlyArray<{id:string, title:string, description:string}>}
  */
@@ -78,7 +96,13 @@ export function starsForLesson(correctAnswers, totalQuestions) {
 }
 
 function moduleComplete(snapshot, module) {
-  const total = (snapshot.totalItemsByModule || {})[module];
+  // Prefer a frozen mastery target (the original core-set size) when the caller
+  // supplies one; otherwise fall back to the reported total item count so legacy
+  // callers keep their behavior.
+  const frozen = (snapshot.masteryTargetsByModule || {})[module];
+  const total = frozen != null && frozen > 0
+    ? frozen
+    : (snapshot.totalItemsByModule || {})[module];
   if (total == null || total <= 0) return false;
   const done = (snapshot.completedItemsByModule || {})[module] || 0;
   return done >= total;

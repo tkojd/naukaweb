@@ -138,6 +138,38 @@ describe('buildWorksheet - scope filters', () => {
     expect(ws.meta.levelLabel).toBe('4-6 lat');
   });
 
+  it('reflects the ACTUAL scope when a requested level would empty the pool', () => {
+    // English sentences are all LATE-level. Requesting EARLY within that category
+    // empties the level filter, so resolvePool drops it. The sheet must not then
+    // advertise the EARLY band it could not enforce.
+    const ws = buildWorksheet({
+      module: LEARNING_MODULES.ENGLISH,
+      category: 'sentences',
+      level: AGE_LEVELS.EARLY,
+      questionCount: 4,
+      rng: makeRng()
+    });
+    // The applied level/levelLabel are cleared (not advertising a band we dropped).
+    expect(ws.meta.level).toBeNull();
+    expect(ws.meta.levelLabel).toBeNull();
+    // The requested band is still recorded, and the widening is flagged honestly.
+    expect(ws.meta.requestedLevel).toBe(AGE_LEVELS.EARLY);
+    expect(ws.meta.scopeWidened).toBe(true);
+    // The category that WAS applied stays advertised.
+    expect(ws.meta.category).toBe('sentences');
+  });
+
+  it('does not flag scopeWidened when filters are honored', () => {
+    const ws = buildWorksheet({
+      module: LEARNING_MODULES.ENGLISH,
+      level: AGE_LEVELS.EARLY,
+      questionCount: 4,
+      rng: makeRng()
+    });
+    expect(ws.meta.scopeWidened).toBe(false);
+    expect(ws.meta.level).toBe(AGE_LEVELS.EARLY);
+  });
+
   it('exposes categories for a module (sanity check against content helper)', () => {
     const cats = categoriesFor(LEARNING_MODULES.ENGLISH);
     expect(cats.length).toBeGreaterThan(0);

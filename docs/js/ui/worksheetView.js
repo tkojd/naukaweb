@@ -213,6 +213,14 @@ function renderWorksheet(host, data, withKey) {
       }),
       data.meta.levelLabel
         ? el('span', { className: 'worksheet-meta-item', text: `Poziom: ${data.meta.levelLabel}` })
+        : null,
+      // Be honest when a requested age band/category could not be enforced (the
+      // pool would have been empty), so the sheet does not misrepresent its scope.
+      data.meta.scopeWidened
+        ? el('span', {
+            className: 'worksheet-meta-item worksheet-meta-note',
+            text: 'Zakres poszerzony (wszystkie poziomy)'
+          })
         : null
     ])
   ]);

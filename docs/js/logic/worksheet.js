@@ -93,13 +93,31 @@ function shuffleWith(rng, array) {
  */
 function resolvePool(module, category, level) {
   let pool = itemsFor(module);
-  if (!pool || pool.length === 0) return [];
-
-  if (category) {
-    const byCategory = itemsForCategory(module, category);
-    if (byCategory.length > 0) pool = byCategory;
+  if (!pool || pool.length === 0) {
+    return {
+      pool: [],
+      categoryApplied: false,
+      levelApplied: false,
+      categoryRelaxed: Boolean(category),
+      levelRelaxed: Boolean(level)
+    };
   }
 
+  let categoryApplied = false;
+  let categoryRelaxed = false;
+  if (category) {
+    const byCategory = itemsForCategory(module, category);
+    if (byCategory.length > 0) {
+      pool = byCategory;
+      categoryApplied = true;
+    } else {
+      // Requested category is empty for this module: the scope was widened.
+      categoryRelaxed = true;
+    }
+  }
+
+  let levelApplied = false;
+  let levelRelaxed = false;
   if (level) {
     const byLevel = pool.filter((item) => {
       if (item.level === undefined || item.level === null) return true;
@@ -107,10 +125,17 @@ function resolvePool(module, category, level) {
       return levels.includes(level);
     });
     // Only apply the level filter if it leaves something to work with.
-    if (byLevel.length > 0) pool = byLevel;
+    if (byLevel.length > 0) {
+      pool = byLevel;
+      levelApplied = true;
+    } else {
+      // The level filter would empty the pool, so it is dropped and the sheet may
+      // contain out-of-band items: record that the scope was widened.
+      levelRelaxed = true;
+    }
   }
 
-  return pool;
+  return { pool, categoryApplied, categoryRelaxed, levelApplied, levelRelaxed };
 }
 
 /**
@@ -303,14 +328,31 @@ export function buildWorksheet({
   const moduleLabel = MODULE_LABELS[module] || 'Nauka';
   const count = Math.max(1, Math.floor(Number(questionCount) || 0) || 1);
 
-  const pool = resolvePool(module, category, level);
+  const resolved = resolvePool(module, category, level);
+  const pool = resolved.pool;
+
+  // Reflect the ACTUAL applied scope so the printed sheet never misrepresents
+  // itself. When a requested level/category filter would have emptied the pool it
+  // is dropped (see resolvePool); in that case we clear the advertised
+  // level/category and flag that the scope was widened, rather than printing a
+  // narrow band label over out-of-band items.
+  const levelApplied = Boolean(level) && resolved.levelApplied;
+  const categoryApplied = Boolean(category) && resolved.categoryApplied;
+  const scopeWidened = Boolean(resolved.levelRelaxed || resolved.categoryRelaxed);
 
   const meta = {
     module: module || null,
     moduleLabel,
-    category: category || null,
-    level: level || null,
-    levelLabel: level ? LEVEL_LABELS[level] || null : null,
+    // Requested scope (what the caller asked for).
+    requestedCategory: category || null,
+    requestedLevel: level || null,
+    // Applied scope: only advertise a band/category that was actually enforced.
+    category: categoryApplied ? category : null,
+    level: levelApplied ? level : null,
+    levelLabel: levelApplied ? LEVEL_LABELS[level] || null : null,
+    // True when a requested filter was dropped to keep the pool non-empty, so the
+    // sheet may include items outside the requested band/category.
+    scopeWidened,
     questionCount: count,
     // Placeholder for a printable date line; the view fills the real date so the
     // pure logic stays deterministic and testable.
@@ -318,7 +360,8 @@ export function buildWorksheet({
   };
 
   const titleParts = [`Sprawdzian: ${moduleLabel}`];
-  if (category) titleParts.push(`(${category})`);
+  // Only advertise the category in the title when it was actually applied.
+  if (categoryApplied) titleParts.push(`(${category})`);
   const title = titleParts.join(' ');
 
   const exercises = [];

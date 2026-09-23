@@ -104,6 +104,26 @@ describe('evaluateBadges', () => {
     expect(ids(done)).toContain('color_master');
   });
 
+  it('uses a frozen mastery target when provided, ignoring the grown total', () => {
+    // The colors catalog grew to 20, but the badge should be earned by mastering
+    // the original core set of 10. A child with 10 mastered colors keeps the badge
+    // even though totalItemsByModule now reports 20.
+    const earned = evaluateBadges({
+      completedItemsByModule: { [LEARNING_MODULES.COLORS]: 10 },
+      totalItemsByModule: { [LEARNING_MODULES.COLORS]: 20 },
+      masteryTargetsByModule: { [LEARNING_MODULES.COLORS]: 10 }
+    });
+    expect(ids(earned)).toContain('color_master');
+
+    // Below the frozen target it is still not earned.
+    const partial = evaluateBadges({
+      completedItemsByModule: { [LEARNING_MODULES.COLORS]: 9 },
+      totalItemsByModule: { [LEARNING_MODULES.COLORS]: 20 },
+      masteryTargetsByModule: { [LEARNING_MODULES.COLORS]: 10 }
+    });
+    expect(ids(partial)).not.toContain('color_master');
+  });
+
   it('does not earn a module master when totals are zero/missing', () => {
     const none = evaluateBadges({
       completedItemsByModule: { [LEARNING_MODULES.NUMBERS]: 0 },

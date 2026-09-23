@@ -9,7 +9,8 @@ import {
   awardForAnswer,
   starsForLesson,
   evaluateBadges,
-  MASTERED_BOX
+  MASTERED_BOX,
+  MODULE_MASTERY_TARGETS
 } from '../logic/gamification.js';
 import { epochDayOf, onReview } from '../logic/streak.js';
 import { itemsFor } from '../logic/content.js';
@@ -120,6 +121,10 @@ function evaluateAndPersistBadges(profileId, now, reviewStreakDays) {
     totalCorrectAnswers: totalCorrect,
     completedItemsByModule: completedByModule,
     totalItemsByModule: totalByModule,
+    // Freeze the module-mastery denominators to the original core-set sizes so the
+    // grown catalog (e.g. colors 10 -> 20) does not raise the bar for the
+    // 'Mistrz *' badges or strip the badge from a child who mastered the core set.
+    masteryTargetsByModule: MODULE_MASTERY_TARGETS,
     englishWordsMastered: englishMastered,
     reviewStreakDays,
     alreadyEarnedBadgeIds: already

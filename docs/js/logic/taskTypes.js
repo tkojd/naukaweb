@@ -34,7 +34,7 @@
 // =============================================================================
 
 import { LEARNING_MODULES, AGE_LEVELS } from './models.js';
-import { translationPair } from './content.js';
+import { translationPair, numbers } from './content.js';
 
 /** String ids for every supported task type. */
 export const TASK_TYPES = Object.freeze({
@@ -384,8 +384,18 @@ export function generateTrueFalse({ item, pool = [], forceTruth, rng } = {}) {
 export function generateCountChoose({ task, count, emoji, optionCount = 4, maxNumber = 9, rng } = {}) {
   const theCount = task ? task.count : count;
   const glyph = task ? task.emoji : emoji;
-  const id = task ? task.id : `count_${theCount}`;
   const glyphs = new Array(Math.max(0, theCount)).fill(glyph);
+
+  // Reinforce the REAL catalog digit the child just counted rather than a
+  // synthetic `count_N` item. Recording a synthetic item would create an orphan
+  // NUMBERS review state (keyed `count_N`) that maps to no real digit yet still
+  // counts toward the `Mistrz Cyfr` numerator/denominator, skewing that badge and
+  // polluting stored progress. `numbers` holds digits 0-9 whose `prompt` is the
+  // digit string, so we look the digit up by prompt. When the count has no
+  // matching catalog digit (e.g. counts > 9), `item` stays null so lessonView
+  // skips recording and no orphan NUMBERS state is written; the glyphs still
+  // render from meta so the task remains playable.
+  const item = numbers.find((n) => n.prompt === String(theCount)) || null;
 
   // Build numeric options: the correct count plus distinct nearby distractors.
   const candidates = [];
@@ -394,14 +404,14 @@ export function generateCountChoose({ task, count, emoji, optionCount = 4, maxNu
   }
   const distractorCount = Math.max(0, (optionCount || 1) - 1);
   const distractors = shuffle(candidates, rng).slice(0, distractorCount);
-  const numbers = shuffle([theCount, ...distractors], rng);
+  const numberOptions = shuffle([theCount, ...distractors], rng);
 
   return {
     type: TASK_TYPES.COUNT_CHOOSE,
     moduleType: LEARNING_MODULES.NUMBERS,
-    item: { id, moduleType: LEARNING_MODULES.NUMBERS, prompt: String(theCount), answer: String(theCount), emoji: glyph },
+    item,
     prompt: { emoji: glyph, glyphs },
-    options: numbers.map((n) => ({ id: `n_${n}`, label: String(n), isCorrect: n === theCount })),
+    options: numberOptions.map((n) => ({ id: `n_${n}`, label: String(n), isCorrect: n === theCount })),
     correctItemId: `n_${theCount}`,
     meta: { count: theCount, glyphs, glyph }
   };
