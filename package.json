@@ -1,0 +1,14 @@
+{
+  "name": "naukaweb",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Nauka i Zabawa - web port of the native Android kids education app (ages 4-10, Polish UI).",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.9"
+  }
+}
