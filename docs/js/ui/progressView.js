@@ -16,6 +16,14 @@ const MODULE_TITLES = {
   [LEARNING_MODULES.ENGLISH]: '🇬🇧 Angielski'
 };
 
+/** Per-module accent used to tint the progress cards. */
+const MODULE_ACCENTS = {
+  [LEARNING_MODULES.COLORS]: '#FF6B6B',
+  [LEARNING_MODULES.POLISH_LETTERS]: '#4D96FF',
+  [LEARNING_MODULES.NUMBERS]: '#6BCB77',
+  [LEARNING_MODULES.ENGLISH]: '#FFA45B'
+};
+
 const MODULE_ORDER = [
   LEARNING_MODULES.COLORS,
   LEARNING_MODULES.POLISH_LETTERS,
@@ -23,14 +31,26 @@ const MODULE_ORDER = [
   LEARNING_MODULES.ENGLISH
 ];
 
+function prefersReducedMotion() {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
 /**
  * @param {HTMLElement} root
  * @param {{profileId:string, onBack:Function}} params
  */
 export function renderProgressScreen(root, { profileId, onBack }) {
   clear(root);
-  const container = el('section', { className: 'screen screen--progress' });
+  const reduced = prefersReducedMotion();
+  const container = el('section', {
+    className: reduced ? 'screen screen--progress' : 'screen screen--progress anim-fade-slide-in'
+  });
   root.appendChild(container);
+  let stagger = 0; // running entrance delay for a gentle staggered reveal
 
   const reviewStates = storage.getAllReviewStates(profileId);
   const masteredByModule = {};
@@ -54,27 +74,46 @@ export function renderProgressScreen(root, { profileId, onBack }) {
     };
   });
 
+  /** Apply a small staggered fade/slide-in delay to an entrance node. */
+  const staged = (node) => {
+    if (!reduced) {
+      node.classList.add('anim-fade-slide-in');
+      node.style.animationDelay = `${stagger}s`;
+      stagger += 0.07;
+    }
+    return node;
+  };
+
   container.appendChild(el('h1', { className: 'screen-title', text: 'Twoje postępy' }));
-  container.appendChild(
-    el('p', {
-      className: 'progress-totals',
-      text: `⭐ ${totalStars} gwiazdek   •   ${totalPoints} punktów`
-    })
-  );
+
+  const totalsBanner = el('div', { className: 'progress-banner' }, [
+    el('div', { className: 'progress-banner-stat' }, [
+      el('span', { className: 'progress-banner-value', text: `⭐ ${totalStars}` }),
+      el('span', { className: 'progress-banner-label', text: 'gwiazdek' })
+    ]),
+    el('div', { className: 'progress-banner-stat' }, [
+      el('span', { className: 'progress-banner-value', text: `${totalPoints}` }),
+      el('span', { className: 'progress-banner-label', text: 'punktów' })
+    ])
+  ]);
+  container.appendChild(staged(totalsBanner));
 
   const list = el('div', { className: 'progress-list' });
   for (const stat of moduleStats) {
+    const accent = MODULE_ACCENTS[stat.module] || '#4D96FF';
     list.appendChild(
-      el('div', { className: 'module-card' }, [
-        el('div', { className: 'module-card-info' }, [
-          el('span', { className: 'module-card-title', text: MODULE_TITLES[stat.module] }),
-          el('span', {
-            className: 'module-card-mastered',
-            text: `Opanowane ${stat.mastered}/${stat.total}`
-          })
-        ]),
-        buildStarRow(stat.stars)
-      ])
+      staged(
+        el('div', { className: 'module-card', style: { '--card-accent': accent } }, [
+          el('div', { className: 'module-card-info' }, [
+            el('span', { className: 'module-card-title', text: MODULE_TITLES[stat.module] }),
+            el('span', {
+              className: 'module-card-mastered',
+              text: `Opanowane ${stat.mastered}/${stat.total}`
+            })
+          ]),
+          buildStarRow(stat.stars)
+        ])
+      )
     );
   }
   container.appendChild(list);
@@ -85,16 +124,18 @@ export function renderProgressScreen(root, { profileId, onBack }) {
   for (const badge of BADGES) {
     const isEarned = earned.has(badge.id);
     badgeGrid.appendChild(
-      el('div', { className: `badge-card ${isEarned ? 'badge-card--earned' : 'badge-card--locked'}` }, [
-        el('span', { className: 'badge-icon', text: isEarned ? '🏅' : '🔒' }),
-        el('div', { className: 'badge-info' }, [
-          el('span', { className: 'badge-title', text: badge.title }),
-          el('span', {
-            className: 'badge-desc',
-            text: isEarned ? badge.description : 'Jeszcze chwila i ją zdobędziesz!'
-          })
+      staged(
+        el('div', { className: `badge-card ${isEarned ? 'badge-card--earned' : 'badge-card--locked'}` }, [
+          el('span', { className: 'badge-icon', text: isEarned ? '🏅' : '🔒' }),
+          el('div', { className: 'badge-info' }, [
+            el('span', { className: 'badge-title', text: badge.title }),
+            el('span', {
+              className: 'badge-desc',
+              text: isEarned ? badge.description : 'Jeszcze chwila i ją zdobędziesz!'
+            })
+          ])
         ])
-      ])
+      )
     );
   }
   container.appendChild(badgeGrid);

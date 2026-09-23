@@ -4,9 +4,13 @@
 
 import { el, clear } from './dom.js';
 import * as storage from '../data/storage.js';
+import { playTap } from '../audio/soundEffects.js';
 
 /** Emoji avatars offered to new profiles (child-friendly animals). */
 const AVATARS = ['🐱', '🐶', '🐰', '🦊', '🐻', '🐼', '🐨', '🦁', '🐯', '🐸', '🐵', '🐷', '🐮', '🐔', '🦄'];
+
+/** A soft accent per profile card, cycled so the list stays colorful. */
+const CARD_ACCENTS = ['#FF6B6B', '#4D96FF', '#6BCB77', '#FFA45B', '#B983FF'];
 
 /**
  * Render the profile screen into `root`.
@@ -18,23 +22,28 @@ export function renderProfileScreen(root, { onProfileReady }) {
   const profiles = storage.listProfiles();
   let creating = profiles.length === 0;
 
-  const container = el('section', { className: 'screen screen--profile' });
+  const container = el('section', { className: 'screen screen--profile anim-fade-slide-in' });
   root.appendChild(container);
 
   function draw() {
     clear(container);
-    container.appendChild(el('h1', { className: 'screen-title', text: 'Kto się dziś uczy?' }));
+    container.appendChild(
+      el('h1', { className: 'screen-title hero-title', text: 'Kto się dziś uczy?' })
+    );
 
     if (creating) {
       container.appendChild(buildCreateForm(onProfileReady));
     } else {
       const list = el('div', { className: 'profile-list' });
-      for (const profile of storage.listProfiles()) {
+      storage.listProfiles().forEach((profile, i) => {
+        const accent = CARD_ACCENTS[i % CARD_ACCENTS.length];
         list.appendChild(
           el('button', {
             className: 'profile-card touch-target',
             type: 'button',
+            style: { '--card-accent': accent },
             onClick: () => {
+              playTap(); // also resumes the AudioContext on this real user gesture
               storage.setActiveProfileId(profile.id);
               onProfileReady();
             }
@@ -43,7 +52,7 @@ export function renderProfileScreen(root, { onProfileReady }) {
             el('span', { className: 'profile-name', text: profile.name })
           ])
         );
-      }
+      });
       container.appendChild(list);
       container.appendChild(
         el('button', {
@@ -76,12 +85,20 @@ function buildCreateForm(onProfileReady) {
       className: 'avatar-choice touch-target',
       type: 'button',
       text: glyph,
+      'aria-pressed': 'false',
       onClick: () => {
         selectedAvatar = glyph;
-        buttons.forEach((b) => b.classList.toggle('avatar-choice--selected', b === btn));
+        buttons.forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle('avatar-choice--selected', on);
+          b.setAttribute('aria-pressed', String(on));
+        });
       }
     });
-    if (glyph === selectedAvatar) btn.classList.add('avatar-choice--selected');
+    if (glyph === selectedAvatar) {
+      btn.classList.add('avatar-choice--selected');
+      btn.setAttribute('aria-pressed', 'true');
+    }
     buttons.push(btn);
     grid.appendChild(btn);
   }
@@ -102,6 +119,7 @@ function buildCreateForm(onProfileReady) {
       type: 'button',
       text: 'Zaczynamy! 🚀',
       onClick: () => {
+        playTap(); // resumes the AudioContext on a real user gesture
         const profile = storage.createProfile(nameInput.value, selectedAvatar);
         storage.setActiveProfileId(profile.id);
         onProfileReady();

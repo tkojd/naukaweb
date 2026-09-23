@@ -40,13 +40,17 @@ export function renderHomeScreen(root, { onOpenModule, onOpenProgress, onSwitchP
     }
   }
 
-  const container = el('section', { className: 'screen screen--home' });
+  const container = el('section', { className: 'screen screen--home anim-fade-slide-in' });
 
+  const totalsEl = el('p', {
+    className: 'home-totals',
+    text: `⭐ ${totalStars}   •   0 pkt`
+  });
   const header = el('div', { className: 'home-header' }, [
     el('span', { className: 'home-avatar', text: profile.avatar }),
     el('div', { className: 'home-greeting' }, [
       el('h1', { className: 'screen-title', text: `Cześć, ${profile.name}!` }),
-      el('p', { className: 'home-totals', text: `⭐ ${totalStars}   •   ${totalPoints} pkt` })
+      totalsEl
     ])
   ]);
   container.appendChild(header);
@@ -58,11 +62,12 @@ export function renderHomeScreen(root, { onOpenModule, onOpenProgress, onSwitchP
   const grid = el('div', { className: 'tile-grid' });
   for (const tile of TILES) {
     const subtitle = tile.module != null ? `⭐ ${starsByModule[tile.module] || 0}` : null;
+    const isProgress = tile.module == null;
     grid.appendChild(
       el('button', {
-        className: 'tile touch-target',
+        className: `tile touch-target${isProgress ? ' tile--progress' : ''}`,
         type: 'button',
-        style: { backgroundColor: tile.color },
+        style: { '--tile-accent': tile.color },
         onClick: () => {
           if (tile.module != null) onOpenModule(tile.module);
           else onOpenProgress();
@@ -76,6 +81,9 @@ export function renderHomeScreen(root, { onOpenModule, onOpenProgress, onSwitchP
   }
   container.appendChild(grid);
 
+  // Animated count-up for total points (guarded by prefers-reduced-motion).
+  animatePoints(totalsEl, totalStars, totalPoints);
+
   container.appendChild(
     el('button', {
       className: 'big-button big-button--secondary touch-target',
@@ -86,4 +94,39 @@ export function renderHomeScreen(root, { onOpenModule, onOpenProgress, onSwitchP
   );
 
   root.appendChild(container);
+}
+
+/**
+ * Count the points up from 0 to `points`, then add a tiny bounce. Falls back to the
+ * final value immediately when reduced motion is preferred or the target is 0.
+ */
+function animatePoints(target, stars, points) {
+  const setLabel = (n) => {
+    target.textContent = `⭐ ${stars}   •   ${n} pkt`;
+  };
+  const prefersReduced =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (prefersReduced || points <= 0 || typeof requestAnimationFrame !== 'function') {
+    setLabel(points);
+    return;
+  }
+
+  const duration = 700;
+  const startAt = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  function step(now) {
+    const elapsed = now - startAt;
+    const t = Math.min(1, elapsed / duration);
+    const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+    setLabel(Math.round(eased * points));
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      setLabel(points);
+      target.classList.add('anim-count-up');
+    }
+  }
+  requestAnimationFrame(step);
 }
