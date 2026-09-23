@@ -146,11 +146,18 @@ neutralizowane (treść pozostaje od razu widoczna).
 
 ### Zależność od czcionki i tryb offline
 
-Nagłówki i tekst korzystają z zaokrąglonej, przyjaznej czcionki webowej z **Google Fonts**
-(**Fredoka** oraz **Nunito**), ładowanej z `preconnect` dla szybszego startu. Zapytanie do
-Google Fonts zawiera parametr **`subset=latin-ext`**, dzięki czemu polskie znaki
-diakrytyczne (ą, ć, ę, ł, ń, ó, ś, ź, ż) renderują się w tym samym kroju co reszta
-tekstu, a nie spadają do czcionki zastępczej. Jeśli sieć
+Nagłówki korzystają z zaokrąglonej, przyjaznej czcionki webowej **Baloo 2**, a tekst z
+**Nunito** - obie z **Google Fonts**, ładowane z `preconnect` dla szybszego startu. Oba
+kroje mają **komplet polskich znaków diakrytycznych** (ą, ć, ę, ł, ń, ó, ś, ź, ż oraz
+wielkie Ą, Ć, Ę, Ł, Ń, Ó, Ś, Ź, Ż), więc renderują się w jednym, spójnym kroju.
+
+Wcześniej używana była **Fredoka**, ale jej plik webowy **nie zawiera konturów większości
+polskich znaków** (obecne są tylko `ó/Ó` i `ł/Ł`). Mimo deklarowanego zakresu `latin-ext`
+przeglądarka podstawiała brakujące znaki, takie jak **`ś` i `ć`**, z czcionki zastępczej,
+przez co wyświetlały się innym krojem. Zmiana na Baloo 2 (zweryfikowaną narzędziem
+`fontTools` pod kątem wszystkich 18 polskich znaków) rozwiązuje problem u źródła; parametr
+`subset=latin-ext` nie jest już potrzebny, bo Google Fonts dobiera właściwe podzbiory
+automatycznie przez `unicode-range`. Jeśli sieć
 lub CDN są niedostępne, aplikacja płynnie przechodzi na **zaokrągloną czcionkę systemową**
 (`ui-rounded`, `Segoe UI Rounded`, `SF Pro Rounded`, `system-ui`), więc **wygląda dobrze
 także offline** i nie traci swojego zaokrąglonego charakteru.

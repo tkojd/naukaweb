@@ -53,8 +53,14 @@
   --focus-ring-offset: 3px;
 
   /* --- Typography --- */
-  --font-display: 'Fredoka', 'Nunito', ui-rounded, 'Segoe UI Rounded', 'SF Pro Rounded', system-ui, sans-serif;
-  --font-body: 'Fredoka', 'Nunito', ui-rounded, 'Segoe UI Rounded', 'SF Pro Rounded', system-ui, sans-serif;
+  /* Baloo 2 (display) and Nunito (body) are both rounded, friendly Google fonts
+     that ship a COMPLETE Polish glyph set (ą ć ę ł ń ó ś ź ż + uppercase). The
+     previous 'Fredoka' stack looked right for basic Latin but Fredoka's web font
+     lacks contours for most Polish diacritics (only ó/Ó and ł/Ł are present), so
+     the browser substituted ś/ć etc. from a fallback face and they rendered in a
+     different typeface. System rounded fonts remain as an offline fallback. */
+  --font-display: 'Baloo 2', 'Nunito', ui-rounded, 'Segoe UI Rounded', 'SF Pro Rounded', system-ui, sans-serif;
+  --font-body: 'Nunito', ui-rounded, 'Segoe UI Rounded', 'SF Pro Rounded', system-ui, sans-serif;
 
   /* --- Motion --- */
   --transition-fast: 0.12s ease;
