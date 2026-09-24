@@ -1,6 +1,9 @@
 # Zależności deweloperskie (tylko do testów Vitest, nie są wdrażane)
 node_modules/
 
+# Notatki procesowe agenta (zarządzane osobno, nie wdrażane)
+.agents/
+
 # Logi i pliki tymczasowe
 *.log
 npm-debug.log*

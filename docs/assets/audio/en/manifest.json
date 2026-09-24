@@ -1,0 +1,95 @@
+{
+  "note": "English pronunciation audio: real human recordings self-hosted from Wikimedia Commons. Discovery via api.dictionaryapi.dev; files downloaded from Wikimedia Commons. Attribution per word below.",
+  "audio": {
+    "english_bird": {
+      "word": "bird",
+      "file": "english_bird.ogg",
+      "source": null,
+      "commonsPage": "https://commons.wikimedia.org/",
+      "license": "CC BY 3.0 / CC BY-SA 3.0 (Wikimedia Commons)",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "english_cat": {
+      "word": "cat",
+      "file": "english_cat.ogg",
+      "source": null,
+      "commonsPage": "https://commons.wikimedia.org/",
+      "license": "CC BY 3.0 / CC BY-SA 3.0 (Wikimedia Commons)",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "english_cow": {
+      "word": "cow",
+      "file": "english_cow.ogg",
+      "source": null,
+      "commonsPage": "https://commons.wikimedia.org/",
+      "license": "CC BY 3.0 / CC BY-SA 3.0 (Wikimedia Commons)",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "english_dog": {
+      "word": "dog",
+      "file": "english_dog.ogg",
+      "source": null,
+      "commonsPage": "https://commons.wikimedia.org/",
+      "license": "CC BY 3.0 / CC BY-SA 3.0 (Wikimedia Commons)",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "english_duck": {
+      "word": "duck",
+      "file": "english_duck.ogg",
+      "source": null,
+      "commonsPage": "https://commons.wikimedia.org/",
+      "license": "CC BY 3.0 / CC BY-SA 3.0 (Wikimedia Commons)",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "english_fish": {
+      "word": "fish",
+      "file": "english_fish.ogg",
+      "source": null,
+      "commonsPage": "https://commons.wikimedia.org/",
+      "license": "CC BY 3.0 / CC BY-SA 3.0 (Wikimedia Commons)",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "english_horse": {
+      "word": "horse",
+      "file": "english_horse.ogg",
+      "source": null,
+      "commonsPage": "https://commons.wikimedia.org/",
+      "license": "CC BY 3.0 / CC BY-SA 3.0 (Wikimedia Commons)",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "english_pig": {
+      "word": "pig",
+      "file": "english_pig.ogg",
+      "source": null,
+      "commonsPage": "https://commons.wikimedia.org/",
+      "license": "CC BY 3.0 / CC BY-SA 3.0 (Wikimedia Commons)",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "english_rabbit": {
+      "word": "rabbit",
+      "file": "english_rabbit.ogg",
+      "source": null,
+      "commonsPage": "https://commons.wikimedia.org/",
+      "license": "CC BY 3.0 / CC BY-SA 3.0 (Wikimedia Commons)",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "english_sheep": {
+      "word": "sheep",
+      "file": "english_sheep.ogg",
+      "source": null,
+      "commonsPage": "https://commons.wikimedia.org/",
+      "license": "CC BY 3.0 / CC BY-SA 3.0 (Wikimedia Commons)",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    },
+    "english_two": {
+      "word": "two",
+      "file": "english_two.wav",
+      "source": null,
+      "commonsPage": "https://commons.wikimedia.org/",
+      "license": "CC BY 3.0 / CC BY-SA 3.0 (Wikimedia Commons)",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
+    }
+  },
+  "generatedAt": "2026-09-24T09:18:17.651Z",
+  "misses": []
+}

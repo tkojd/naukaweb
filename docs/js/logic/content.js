@@ -73,6 +73,12 @@
 
 import { LEARNING_MODULES, AGE_LEVELS } from './models.js';
 
+// Re-export the pure asset-resolution layer so callers can resolve a relative
+// picture path (OpenMoji SVG) and English pronunciation path per item directly
+// from the content module. See assets.js for the fallback semantics (emoji when
+// no icon; Web Speech en-US when no recording).
+export { imageFor, iconNameFor, audioForEnglish, withAssets, IMG_DIR, AUDIO_EN_DIR } from './assets.js';
+
 // --- builders ---------------------------------------------------------------
 
 /**

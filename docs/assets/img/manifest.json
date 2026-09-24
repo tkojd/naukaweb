@@ -1,0 +1,438 @@
+{
+  "license": "CC BY-SA 4.0",
+  "source": "https://openmoji.org/",
+  "openmojiVersion": "15.0.0",
+  "icons": {
+    "cat": {
+      "codepoint": "1F408",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F408.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "dog": {
+      "codepoint": "1F415",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F415.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "bird": {
+      "codepoint": "1F426",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F426.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "fish": {
+      "codepoint": "1F41F",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F41F.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "horse": {
+      "codepoint": "1F40E",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F40E.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "cow": {
+      "codepoint": "1F404",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F404.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "pig": {
+      "codepoint": "1F416",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F416.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "sheep": {
+      "codepoint": "1F411",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F411.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "duck": {
+      "codepoint": "1F986",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F986.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "rabbit": {
+      "codepoint": "1F407",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F407.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "bear": {
+      "codepoint": "1F43B",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F43B.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "lion": {
+      "codepoint": "1F981",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F981.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "tiger": {
+      "codepoint": "1F405",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F405.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "elephant": {
+      "codepoint": "1F418",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F418.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "monkey": {
+      "codepoint": "1F412",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F412.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "frog": {
+      "codepoint": "1F438",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F438.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "bee": {
+      "codepoint": "1F41D",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F41D.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "snake": {
+      "codepoint": "1F40D",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F40D.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "fox": {
+      "codepoint": "1F98A",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F98A.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "wolf": {
+      "codepoint": "1F43A",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F43A.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "apple": {
+      "codepoint": "1F34E",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F34E.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "milk": {
+      "codepoint": "1F95B",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F95B.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "bread": {
+      "codepoint": "1F35E",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F35E.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "water": {
+      "codepoint": "1F4A7",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F4A7.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "banana": {
+      "codepoint": "1F34C",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F34C.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "egg": {
+      "codepoint": "1F95A",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F95A.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "cheese": {
+      "codepoint": "1F9C0",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F9C0.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "cake": {
+      "codepoint": "1F370",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F370.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "soup": {
+      "codepoint": "1F372",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F372.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "rice": {
+      "codepoint": "1F35A",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F35A.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "meat": {
+      "codepoint": "1F356",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F356.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "juice": {
+      "codepoint": "1F9C3",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F9C3.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "hand": {
+      "codepoint": "270B",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/270B.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "eye": {
+      "codepoint": "1F441",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F441.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "nose": {
+      "codepoint": "1F443",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F443.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "ear": {
+      "codepoint": "1F442",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F442.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "mouth": {
+      "codepoint": "1F444",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F444.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "foot": {
+      "codepoint": "1F9B6",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F9B6.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "shirt": {
+      "codepoint": "1F455",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F455.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "shoes": {
+      "codepoint": "1F45F",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F45F.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "hat": {
+      "codepoint": "1F9E2",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F9E2.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "dress": {
+      "codepoint": "1F457",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F457.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "socks": {
+      "codepoint": "1F9E6",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F9E6.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "coat": {
+      "codepoint": "1F9E5",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F9E5.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "gloves": {
+      "codepoint": "1F9E4",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F9E4.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "house": {
+      "codepoint": "1F3E0",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F3E0.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "door": {
+      "codepoint": "1F6AA",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F6AA.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "window": {
+      "codepoint": "1FA9F",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1FA9F.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "bed": {
+      "codepoint": "1F6CF",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F6CF.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "chair": {
+      "codepoint": "1FA91",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1FA91.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "table": {
+      "codepoint": "1F37D",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F37D.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "lamp": {
+      "codepoint": "1F4A1",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F4A1.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "key": {
+      "codepoint": "1F511",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F511.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "sun": {
+      "codepoint": "2600",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/2600.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "moon": {
+      "codepoint": "1F319",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F319.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "tree": {
+      "codepoint": "1F333",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F333.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "flower": {
+      "codepoint": "1F337",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F337.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "star": {
+      "codepoint": "2B50",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/2B50.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "rain": {
+      "codepoint": "1F327",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F327.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "snow": {
+      "codepoint": "2744",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/2744.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "cloud": {
+      "codepoint": "2601",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/2601.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "river": {
+      "codepoint": "1F3DE",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F3DE.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "mountain": {
+      "codepoint": "26F0",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/26F0.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "car": {
+      "codepoint": "1F697",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F697.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "bus": {
+      "codepoint": "1F68C",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F68C.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "train": {
+      "codepoint": "1F686",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F686.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "plane": {
+      "codepoint": "2708",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/2708.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "bike": {
+      "codepoint": "1F6B2",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F6B2.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "boat": {
+      "codepoint": "26F5",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/26F5.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "ship": {
+      "codepoint": "1F6A2",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F6A2.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "watermelon": {
+      "codepoint": "1F349",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F349.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "balloon": {
+      "codepoint": "1F388",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F388.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "onion": {
+      "codepoint": "1F9C5",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F9C5.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "butterfly": {
+      "codepoint": "1F98B",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F98B.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "tv": {
+      "codepoint": "1F4FA",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F4FA.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "goose": {
+      "codepoint": "1FABF",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1FABF.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "flag": {
+      "codepoint": "1F6A9",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F6A9.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "guitar": {
+      "codepoint": "1F3B8",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F3B8.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "scooter": {
+      "codepoint": "1F6F4",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F6F4.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "needle": {
+      "codepoint": "1FAA1",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1FAA1.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "boat_small": {
+      "codepoint": "1F6A4",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F6A4.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "mouse": {
+      "codepoint": "1F42D",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F42D.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "snail": {
+      "codepoint": "1F40C",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F40C.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "zebra": {
+      "codepoint": "1F993",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F993.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "paintbrush": {
+      "codepoint": "1F58C",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F58C.svg",
+      "license": "CC BY-SA 4.0"
+    },
+    "crayon": {
+      "codepoint": "1F58D",
+      "url": "https://cdn.jsdelivr.net/gh/hfg-gmuend/openmoji@15.0.0/color/svg/1F58D.svg",
+      "license": "CC BY-SA 4.0"
+    }
+  },
+  "generatedAt": "2026-09-24T07:40:14.730Z"
+}
