@@ -660,6 +660,57 @@ body {
   font-size: 2.4rem;
 }
 
+/* --- Picture / glyph answer tiles (real committed images, rule B3) --- */
+.answer--picture,
+.answer--glyph {
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.answer-image {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.answer-emoji--picture {
+  font-size: clamp(2.6rem, 9vw, 3.6rem);
+}
+
+.answer-glyph {
+  font-size: clamp(2.8rem, 10vw, 4rem);
+  font-weight: 800;
+  line-height: 1;
+  color: color-mix(in srgb, var(--lesson-accent, var(--primary)) 80%, #000);
+}
+
+/* --- Prompt pictures (letters / true-false) rendered as real images --- */
+.prompt-image {
+  width: clamp(96px, 32vw, 140px);
+  height: clamp(96px, 32vw, 140px);
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* A quiet listen affordance shown in colour / English prompt headers so the child
+   knows to listen (the actual audio auto-plays and the 🔊 speaker repeats it). */
+.prompt-listen-icon {
+  font-size: clamp(2.6rem, 9vw, 3.6rem);
+  line-height: 1;
+}
+
+.prompt-color-name-text,
+.prompt-color-name {
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 800;
+  color: var(--ink);
+}
+
 /* ===== New task-type components ===========================================
    All reuse the existing tokens (radius, shadow, accent, ~72px touch targets)
    so the new tasks feel like the classic multiple-choice screen. */
@@ -734,6 +785,20 @@ body {
 
 .match-emoji {
   font-size: 2.4rem;
+  line-height: 1;
+}
+
+.match-image {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* The 🔊 shown on a non-reader English word card (sound -> picture matching). */
+.match-speaker {
+  font-size: 2.2rem;
   line-height: 1;
 }
 

@@ -11,12 +11,17 @@
 
 import { el, clear, shuffle } from './dom.js';
 import { LEARNING_MODULES } from '../logic/models.js';
-import { itemsForLevel, allItems } from '../logic/content.js';
+import { itemsForLevel, allItems, imageFor, audioForEnglish } from '../logic/content.js';
 import { buildLesson, TASK_TYPES, isSpellingCorrect } from '../logic/taskTypes.js';
 import { starsForLesson } from '../logic/gamification.js';
 import * as progressService from '../data/progressService.js';
 import * as storage from '../data/storage.js';
-import { speakPolish, speakEnglish, stop as stopSpeech } from '../audio/speech.js';
+import {
+  speakPolish,
+  speakEnglish,
+  playEnglishAudio,
+  stop as stopSpeech
+} from '../audio/speech.js';
 import { playCorrect, playBadge } from '../audio/soundEffects.js';
 
 const QUESTIONS_PER_LESSON = 6;
@@ -207,6 +212,9 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
       ? progressService.recordAnswer(profileId, spec.item, correct, Date.now())
       : { pointsAwarded: 0, newlyEarnedBadges: [] };
     if (correct) {
+      // Rule C3: after a correct answer in the English module, replay the correct
+      // item's English pronunciation so the child hears the word they just learned.
+      replayEnglishOnCorrect(spec);
       celebrateCorrect(feedback, outcome.pointsAwarded, outcome.newlyEarnedBadges, onCorrectCleanup);
     } else {
       clear(feedback);
@@ -272,6 +280,7 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
       awarded += outcome.pointsAwarded || 0;
       for (const b of outcome.newlyEarnedBadges || []) badgeById.set(b.id, b);
     }
+    replayEnglishOnCorrect(spec);
     celebrateCorrect(feedback, awarded, [...badgeById.values()], onCorrectCleanup);
   }
 
@@ -324,23 +333,52 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
     speakSpec(spec);
   }
 
+  /**
+   * Build the visual body of an option button, honouring the engine's
+   * representation tags (rule A: non-readers get a picture / swatch / glyph, never
+   * words to read):
+   *   - a colour SWATCH (option.rep === 'swatch' or a colour option with empty
+   *     label) renders a solid tile with an accessible aria-label;
+   *   - a PICTURE option renders a real committed <img> when the item has a
+   *     resolved image asset, else falls back to the emoji glyph;
+   *   - a GLYPH option (letters) renders the large letter glyph;
+   *   - otherwise a text option renders its (optional) emoji + label.
+   * Returns the built <button>. The picture is drawn from the option's own item so
+   * the caller (which enforces C2 via the engine) never has to duplicate assets.
+   */
   function buildOptionButton(spec, option, feedback, grid) {
-    const isColor = spec.moduleType === LEARNING_MODULES.COLORS && option.colorHex;
+    const isColor =
+      option.colorHex && (option.rep === 'swatch' || spec.moduleType === LEARNING_MODULES.COLORS);
     let optionEl;
     if (isColor) {
+      // A pure colour swatch: no text (rule A). The colour NAME is exposed only to
+      // assistive tech via aria-label so the tile itself never spells the answer.
       optionEl = el('button', {
         className: 'answer answer--color touch-target',
         type: 'button',
-        'aria-label': option.label,
+        'aria-label': colorAriaLabel(option),
         style: { backgroundColor: option.colorHex }
       });
+    } else if (option.rep === 'glyph') {
+      // A letter glyph tile (the letter itself is the answer the child taps).
+      optionEl = el('button', {
+        className: 'answer answer--glyph touch-target',
+        type: 'button'
+      }, [el('span', { className: 'answer-glyph', text: option.label })]);
+    } else if (isPictureOption(option)) {
+      // A meaning picture: real committed image when available, else the emoji.
+      optionEl = el('button', {
+        className: 'answer answer--picture touch-target',
+        type: 'button',
+        'aria-label': pictureAriaLabel(spec, option)
+      }, [buildPictureNode(option)]);
     } else {
       optionEl = el('button', {
         className: 'answer touch-target',
         type: 'button'
       }, [
         option.emoji ? el('span', { className: 'answer-emoji', text: option.emoji }) : null,
-        el('span', { className: 'answer-label', text: option.label })
+        option.label ? el('span', { className: 'answer-label', text: option.label }) : null
       ]);
     }
     optionEl.addEventListener('click', () => {
@@ -361,6 +399,54 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
       });
     });
     return optionEl;
+  }
+
+  /** True when an option should render as a picture (image asset or emoji). */
+  function isPictureOption(option) {
+    return option.rep === 'picture' || !!option.imageSrc || (!!option.emoji && !option.label);
+  }
+
+  /**
+   * A picture node for an option: a real <img> (built via el(), never innerHTML)
+   * pointing at the RELATIVE committed asset when present, otherwise the emoji
+   * glyph as a text fallback. The alt is meaningful for assistive tech.
+   */
+  function buildPictureNode(option, altText) {
+    if (option.imageSrc) {
+      return el('img', {
+        className: 'answer-image',
+        src: option.imageSrc,
+        alt: altText || '',
+        draggable: 'false'
+      });
+    }
+    return el('span', { className: 'answer-emoji answer-emoji--picture', text: option.emoji || '' });
+  }
+
+  /**
+   * Accessible label for a picture option. We look the option's catalog item up so
+   * screen-reader users get the meaning; for English tasks the option's meaning is
+   * its Polish answer word (the picture stands for that concept).
+   */
+  function pictureAriaLabel(spec, option) {
+    const item = allItems.find((it) => it.id === option.id);
+    if (!item) return 'Obrazek';
+    return item.answer || item.prompt || 'Obrazek';
+  }
+
+  /** Accessible label for a colour swatch option (the colour name). */
+  function colorAriaLabel(option) {
+    if (option.label) return option.label;
+    const item = allItems.find((it) => it.id === option.id);
+    return (item && (item.answer || item.prompt)) || 'Kolor';
+  }
+
+  /** Accessible label for a MATCH_PAIRS image card (its meaning / colour name). */
+  function matchImageAriaLabel(im) {
+    const item = allItems.find((it) => it.id === im.itemId || it.id === im.pairId);
+    if (item) return item.answer || item.prompt || 'Obrazek';
+    if (im.colorHex) return 'Kolor';
+    return 'Obrazek';
   }
 
   /**
@@ -419,10 +505,11 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
       }
     }
 
-    function makeCard(kind, pairId, children) {
+    function makeCard(kind, pairId, children, ariaLabel) {
       const cardEl = el('button', {
         className: 'match-card touch-target',
-        type: 'button'
+        type: 'button',
+        'aria-label': ariaLabel || null
       }, children);
       cardEl.addEventListener('click', () => {
         if (answered) return;
@@ -464,14 +551,39 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
       return cardEl;
     }
 
+    const isEnglish = !!(spec.meta && spec.meta.isEnglish);
     for (const w of wordCards) {
-      wordCol.appendChild(makeCard('word', w.pairId, [
-        el('span', { className: 'match-word', text: w.label })
-      ]));
+      const children = [];
+      if (w.label) {
+        // Readers (LATE / letters / colours) see the word/glyph text.
+        children.push(el('span', { className: 'match-word', text: w.label }));
+      } else {
+        // Non-reader (EARLY English) card: no text to read (rule A). Show a speaker
+        // that plays the ENGLISH word so the child matches SOUND -> meaning picture.
+        children.push(el('span', { className: 'match-speaker', 'aria-hidden': 'true', text: '🔊' }));
+      }
+      const card = makeCard('word', w.pairId, children);
+      if (!w.label && w.speak) {
+        // Tapping the sound card (or selecting it) speaks the English word; also
+        // set an accessible label so the card is not empty to assistive tech.
+        card.setAttribute('aria-label', 'Posłuchaj słowa');
+        card.addEventListener('click', () => speakDescriptor(w.speak), { capture: true });
+      } else if (w.speak && isEnglish) {
+        card.addEventListener('click', () => speakDescriptor(w.speak), { capture: true });
+      }
+      wordCol.appendChild(card);
     }
     for (const im of imageCards) {
       const children = [];
-      if (im.emoji) {
+      if (im.imageSrc) {
+        // Real committed meaning picture (rule B3), built via el() <img>.
+        children.push(el('img', {
+          className: 'match-image',
+          src: im.imageSrc,
+          alt: '',
+          draggable: 'false'
+        }));
+      } else if (im.emoji) {
         children.push(el('span', { className: 'match-emoji', text: im.emoji }));
       } else if (im.colorHex) {
         children.push(el('span', {
@@ -480,7 +592,8 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
           style: { backgroundColor: im.colorHex }
         }));
       }
-      imageCol.appendChild(makeCard('image', im.pairId, children));
+      const label = matchImageAriaLabel(im);
+      imageCol.appendChild(makeCard('image', im.pairId, children, label));
     }
     board.appendChild(wordCol);
     board.appendChild(imageCol);
@@ -598,16 +711,26 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
    */
   function renderTrueFalse(host, spec) {
     const card = el('div', { className: 'prompt-card prompt-card--truefalse' });
-    if (spec.moduleType === LEARNING_MODULES.COLORS && spec.prompt.colorHex) {
+    const p = spec.prompt || {};
+    const spoken = (spec.meta && spec.meta.speak && spec.meta.speak.text) || p.text || '';
+    if (spec.moduleType === LEARNING_MODULES.COLORS && p.colorHex) {
+      // A swatch is shown; the child hears/reads a colour name and judges the match.
       card.classList.add('prompt-card--color');
-      card.style.backgroundColor = spec.prompt.colorHex;
-      card.appendChild(el('span', { className: 'prompt-color-name', text: spec.prompt.text }));
+      card.style.backgroundColor = p.colorHex;
+      if (p.text) card.appendChild(el('span', { className: 'prompt-color-name', text: p.text }));
     } else {
-      if (spec.prompt.emoji) {
-        card.appendChild(el('span', { className: 'prompt-emoji', text: spec.prompt.emoji }));
+      // A meaning picture (real image when available) is shown; the child hears an
+      // (English or Polish) word and judges whether it names the picture.
+      const pic = p.picture || {};
+      if (pic.imageSrc) {
+        card.appendChild(el('img', { className: 'prompt-image', src: pic.imageSrc, alt: '', draggable: 'false' }));
+      } else if (pic.emoji || p.emoji) {
+        card.appendChild(el('span', { className: 'prompt-emoji', text: pic.emoji || p.emoji }));
       }
-      card.appendChild(el('span', { className: 'prompt-word', text: spec.prompt.text }));
+      if (p.text) card.appendChild(el('span', { className: 'prompt-word', text: p.text }));
     }
+    // The spoken statement word drives the judgement; announce it for a11y.
+    if (spoken) card.setAttribute('aria-label', spoken);
     host.appendChild(card);
     host.appendChild(speakerButton(spec));
 
@@ -642,7 +765,10 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
   function renderCountChoose(host, spec) {
     const glyphs = spec.meta.glyphs || [];
     const card = el('div', { className: 'prompt-card prompt-card--count' });
-    card.appendChild(el('p', { className: 'count-hint', text: 'Policz i wybierz liczbę' }));
+    // Rule C5: render the engine's CONCRETE, grammatically-correct Polish question
+    // verbatim (e.g. 'Ile gwiazdek widzisz?') instead of a vague static hint.
+    const promptText = (spec.prompt && spec.prompt.text) || spec.meta.promptText || '';
+    card.appendChild(el('p', { className: 'count-hint', text: promptText }));
     const glyphWrap = el('div', { className: 'count-glyphs', 'aria-label': `${glyphs.length}` });
     for (const g of glyphs) {
       glyphWrap.appendChild(el('span', { className: 'count-glyph', text: g }));
@@ -680,6 +806,8 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
       grid.appendChild(btn);
     }
     host.appendChild(grid);
+    // Non-readers hear the concrete question read aloud in Polish (rule A + C5).
+    if (promptText) speakPolish(promptText);
   }
 
   // --- prompt card + feedback helpers ---------------------------------------
@@ -691,30 +819,59 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
   function buildPromptCard(spec) {
     const card = el('div', { className: 'prompt-card' });
     const p = spec.prompt || {};
-    if (spec.moduleType === LEARNING_MODULES.COLORS && p.colorHex) {
-      card.classList.add('prompt-card--color');
-      card.style.backgroundColor = p.colorHex;
-      card.appendChild(el('span', { className: 'prompt-color-name', text: p.text || '' }));
-      return card;
-    }
+
+    // find-color-in-scene prompt: a scene picture + the target colour NAME (spoken;
+    // the correct swatch is only among the options, never in the header - C1).
     if (spec.type === TASK_TYPES.WHICH_MATCHES && spec.meta && spec.meta.variant === 'find-color') {
-      // find-color-in-scene prompt
       const scene = spec.meta.sceneDescriptor || {};
-      card.appendChild(el('span', { className: 'prompt-scene-emoji', text: scene.emoji || '' }));
-      card.appendChild(el('span', { className: 'prompt-scene-desc', text: scene.description || '' }));
-      card.appendChild(el('span', { className: 'prompt-find', text: `Znajdź kolor: ${p.text || ''}` }));
+      if (scene.emoji) card.appendChild(el('span', { className: 'prompt-scene-emoji', text: scene.emoji }));
+      if (scene.description) card.appendChild(el('span', { className: 'prompt-scene-desc', text: scene.description }));
+      const colorName = (p.speak && p.speak.text) || scene.target || p.text || '';
+      card.appendChild(el('span', { className: 'prompt-find', text: `Znajdź kolor: ${colorName}` }));
       return card;
     }
+
+    // COLORS: the header NEVER carries the target swatch (rule C1) - the child hears
+    // the colour name and taps the matching swatch among the options. Readers (LATE)
+    // may additionally see the colour word as text.
+    if (spec.moduleType === LEARNING_MODULES.COLORS) {
+      card.classList.add('prompt-card--listen');
+      card.appendChild(el('span', { className: 'prompt-listen-icon', 'aria-hidden': 'true', text: '🔊' }));
+      const name = p.text || (p.speak && p.speak.text) || '';
+      if (p.text) card.appendChild(el('span', { className: 'prompt-color-name-text', text: name }));
+      else card.appendChild(el('span', { className: 'prompt-listen-hint', text: 'Posłuchaj i wybierz kolor' }));
+      return card;
+    }
+
+    // POLISH LETTERS: show the example-word PICTURE (real image when available) and
+    // the letter sound is spoken; the child taps the matching letter glyph.
     if (spec.moduleType === LEARNING_MODULES.POLISH_LETTERS) {
+      const pic = p.picture || {};
+      if (pic.imageSrc) {
+        card.appendChild(el('img', { className: 'prompt-image', src: pic.imageSrc, alt: '', draggable: 'false' }));
+      } else if (pic.emoji || p.emoji) {
+        card.appendChild(el('span', { className: 'prompt-example', text: pic.emoji || p.emoji }));
+      }
       if (p.text) card.appendChild(el('span', { className: 'prompt-letter', text: p.text }));
-      if (p.emoji) card.appendChild(el('span', { className: 'prompt-example', text: p.emoji }));
       return card;
     }
+
+    // ENGLISH: the stimulus is the ENGLISH word, spoken (rule C3). The header shows
+    // a listen affordance (and, for readers at LATE, the English word text). It does
+    // NOT show the meaning picture, so the answer picture is not given away (C2).
+    if (spec.moduleType === LEARNING_MODULES.ENGLISH) {
+      card.classList.add('prompt-card--listen');
+      card.appendChild(el('span', { className: 'prompt-listen-icon', 'aria-hidden': 'true', text: '🔊' }));
+      if (p.text) card.appendChild(el('span', { className: 'prompt-word', text: p.text }));
+      else card.appendChild(el('span', { className: 'prompt-listen-hint', text: 'Posłuchaj i wybierz obrazek' }));
+      return card;
+    }
+
+    // NUMBERS / default fallback.
     if (spec.moduleType === LEARNING_MODULES.NUMBERS) {
       card.appendChild(el('span', { className: 'prompt-digit', text: p.text || '' }));
       return card;
     }
-    // ENGLISH (and default): emoji + word/translation prompt.
     if (p.emoji) card.appendChild(el('span', { className: 'prompt-emoji', text: p.emoji }));
     if (p.text) card.appendChild(el('span', { className: 'prompt-word', text: p.text }));
     return card;
@@ -739,32 +896,87 @@ export function renderLessonScreen(root, { module, profileId, onBack }) {
   }
 
   /**
-   * Speak the spec's prompt. LISTEN_CHOOSE (and any spec carrying meta.speak) uses
-   * the language the engine chose; otherwise we pick pl-PL / en-US from moduleType.
+   * Speak the spec's stimulus. The engine tells us exactly what to say and in which
+   * language via a `speak` descriptor ({text, lang, audioKey, audioSrc?}):
+   *   - prompt.speak carries the stimulus for choice/listen tasks;
+   *   - meta.speak carries it for listen-choose / true-false variants.
+   * We ALWAYS honour that language (rule C3: English stimuli are spoken in English,
+   * never Polish), preferring a committed English MP3/OGG recording when present
+   * and falling back to Web Speech otherwise. The FEAT-001 priming fix ensures the
+   * first phonemes are not clipped. When no descriptor exists we derive a sensible
+   * language from the module.
    */
   function speakSpec(spec) {
-    if (spec.meta && spec.meta.speak && spec.meta.speak.text) {
-      if (spec.meta.speak.lang === 'en-US') speakEnglish(spec.meta.speak.text);
-      else speakPolish(spec.meta.speak.text);
+    const descriptor =
+      (spec.prompt && spec.prompt.speak) || (spec.meta && spec.meta.speak) || null;
+    if (descriptor && descriptor.text) {
+      speakDescriptor(descriptor);
       return;
     }
     const p = spec.prompt || {};
     switch (spec.moduleType) {
       case LEARNING_MODULES.ENGLISH:
-        // For EN prompts speak the English side; PL->EN prompts show Polish text.
-        if (p.direction === 'PL_TO_EN') speakPolish(p.text || '');
-        else speakEnglish(p.text || (spec.item && spec.item.prompt) || '');
+        // English module: always speak English (never Polish as learning material).
+        if (spec.item) playEnglishAudio(imageAudioSrc(spec.item), spec.item.prompt);
+        else speakEnglish(p.text || '');
         break;
       case LEARNING_MODULES.NUMBERS:
-        speakPolish(spec.item ? spec.item.answer : p.text || '');
+        speakPolish((spec.item && spec.item.answer) || p.text || '');
         break;
       case LEARNING_MODULES.POLISH_LETTERS:
         speakPolish((spec.item && (spec.item.exampleWord || spec.item.prompt)) || p.text || '');
         break;
       case LEARNING_MODULES.COLORS:
       default:
-        speakPolish(p.text || (spec.item && spec.item.prompt) || '');
+        speakPolish(p.text || (spec.item && spec.item.answer) || (spec.item && spec.item.prompt) || '');
         break;
+    }
+  }
+
+  /**
+   * Speak a {text, lang, audioSrc?} descriptor. English descriptors prefer a
+   * committed recording (audioSrc) and fall back to Web Speech en-US; Polish is
+   * always spoken via Web Speech pl-PL. Never throws (safe under Node/Vitest).
+   */
+  function speakDescriptor(descriptor) {
+    if (!descriptor || !descriptor.text) return;
+    if (descriptor.lang === 'en-US') {
+      playEnglishAudio(descriptor.audioSrc || null, descriptor.text);
+    } else {
+      speakPolish(descriptor.text);
+    }
+  }
+
+  /** Resolve an English item's committed recording path (or null) via assets. */
+  function englishAudioSrcFor(item) {
+    // The engine already resolves audioSrc into the English speak descriptor, but
+    // when we only hold the item we resolve it the same way (returns null when no
+    // recording exists so playEnglishAudio falls back to Web Speech en-US).
+    if (!item || item.moduleType !== LEARNING_MODULES.ENGLISH) return null;
+    return item.audioSrc || audioForEnglish(item) || null;
+  }
+
+  /** Back-compat alias kept intentionally small; see englishAudioSrcFor. */
+  function imageAudioSrc(item) {
+    return englishAudioSrcFor(item);
+  }
+
+  /**
+   * Rule C3: replay the correct English pronunciation after a correct English
+   * answer. Fires once (guarded by `answered` being set right after) and only for
+   * the ENGLISH module. Prefers the engine's meta.englishSpeak descriptor (which
+   * carries the committed audioSrc), else derives from the spec's item. Mute-aware
+   * and safe under Node (playEnglishAudio is a no-op there).
+   */
+  function replayEnglishOnCorrect(spec) {
+    if (!spec || spec.moduleType !== LEARNING_MODULES.ENGLISH) return;
+    const en = spec.meta && spec.meta.englishSpeak;
+    if (en && en.text) {
+      playEnglishAudio(en.audioSrc || null, en.text);
+      return;
+    }
+    if (spec.item) {
+      playEnglishAudio(englishAudioSrcFor(spec.item), spec.item.prompt);
     }
   }
 

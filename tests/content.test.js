@@ -29,7 +29,9 @@ import {
   countingPrompt,
   countingCountLabel,
   polishPluralCategory,
-  polishCountNoun
+  polishCountNoun,
+  imageFor,
+  audioForEnglish
 } from '../docs/js/logic/content.js';
 
 // -----------------------------------------------------------------------------
@@ -369,5 +371,70 @@ describe('expanded Numbers data', () => {
       const expected = seq.descending ? [...sortedAsc].reverse() : sortedAsc;
       expect(seq.solution).toEqual(expected);
     }
+  });
+});
+
+// -----------------------------------------------------------------------------
+// Rendering-support guarantees consumed by lessonView (FEAT-003).
+//
+// These pin the data invariants the renderers rely on so the child never faces a
+// task that violates rules A / C1-C5: stage-1 letters are plain (C4), every
+// English item resolves to a MEANING picture (image or emoji) so a non-reader can
+// answer by picture (rule A / C3), and asset refs are always RELATIVE (the app is
+// served under the /naukaweb/ subpath on GitHub Pages).
+// -----------------------------------------------------------------------------
+
+describe('rendering-support content guarantees (C4/C3, relative assets)', () => {
+  it('stage-1 letters contain no Polish diacritics (first lesson is plain letters)', () => {
+    const stage1 = polishLetters.filter((l) => (l.stage || 1) <= 1);
+    expect(stage1.length).toBeGreaterThan(0);
+    for (const l of stage1) {
+      expect(hasPolishDiacritic(l.prompt)).toBe(false);
+    }
+    // firstStageLetters() is exactly the stage-1 (plain) set.
+    const firstIds = new Set(firstStageLetters().map((l) => l.id));
+    const stage1Ids = new Set(stage1.map((l) => l.id));
+    expect(firstIds).toEqual(stage1Ids);
+  });
+
+  it('every English item resolves to a meaning picture (committed image or emoji)', () => {
+    expect(englishWords.length).toBeGreaterThan(0);
+    for (const w of englishWords) {
+      const img = imageFor(w);
+      const hasEmoji = typeof w.emoji === 'string' && w.emoji.trim().length > 0;
+      // A non-reader must be able to answer by picture: either a curated image or,
+      // failing that, a non-empty emoji glyph the renderer falls back to.
+      expect(img !== null || hasEmoji).toBe(true);
+      // When an image IS curated it must be a relative asset path, never absolute.
+      if (img !== null) {
+        expect(img.startsWith('/')).toBe(false);
+        expect(img.startsWith('http')).toBe(false);
+      }
+    }
+  });
+
+  it('asset-ref helpers return RELATIVE paths for every catalog item', () => {
+    for (const item of allItems) {
+      const img = imageFor(item);
+      if (img !== null) {
+        expect(img.startsWith('/')).toBe(false);
+        expect(img).toMatch(/^assets\/img\/.+\.svg$/);
+      }
+      const audio = audioForEnglish(item);
+      if (audio !== null) {
+        expect(audio.startsWith('/')).toBe(false);
+        expect(audio).toMatch(/^assets\/audio\/en\/.+\.(ogg|mp3|wav)$/);
+      }
+    }
+  });
+
+  it('English items that have a committed recording expose it as a relative path', () => {
+    const cat = englishWords.find((w) => w.id === 'english_cat');
+    const src = audioForEnglish(cat);
+    expect(src).not.toBeNull();
+    expect(src.startsWith('/')).toBe(false);
+    // words without a recording fall back (null) to Web Speech en-US at runtime
+    const draw = englishWords.find((w) => w.id === 'english_draw');
+    expect(audioForEnglish(draw)).toBeNull();
   });
 });
