@@ -34,7 +34,32 @@
 // =============================================================================
 
 import { LEARNING_MODULES, AGE_LEVELS } from './models.js';
-import { translationPair, numbers } from './content.js';
+import {
+  translationPair,
+  numbers,
+  countingPrompt,
+  countingCountLabel,
+  hasPolishDiacritic,
+  imageFor,
+  audioForEnglish
+} from './content.js';
+
+/**
+ * Representation kinds a prompt or an option can use. Rule C1 forbids the correct
+ * option from being in the SAME representation as the prompt (e.g. digit -> digit,
+ * or an identical colour swatch in the header and among the options). The engine
+ * tags each C1-relevant spec with meta.promptRep / meta.answerRep so both the UI
+ * and the tests can assert the two differ.
+ */
+export const REPRESENTATIONS = Object.freeze({
+  DIGIT: 'digit',        // a written numeral, e.g. "4"
+  QUANTITY: 'quantity',  // a group of counted pictures
+  SWATCH: 'swatch',      // a solid colour tile
+  PICTURE: 'picture',    // a meaning picture (icon/emoji)
+  SPOKEN: 'spoken',      // spoken audio only
+  WORD: 'word',          // written text (reading)
+  GLYPH: 'glyph'         // a letter glyph
+});
 
 /** String ids for every supported task type. */
 export const TASK_TYPES = Object.freeze({
@@ -129,6 +154,31 @@ function makeOption(item, label, isCorrect) {
   return opt;
 }
 
+/**
+ * A PICTURE option for an item: shows the item's meaning picture (curated icon
+ * when available, else the emoji) and NO text label, so a non-reader can answer
+ * by image alone (rule A). `label` is kept empty on purpose - the UI renders the
+ * picture, not words. Rule C2 is enforced by the caller (the prompt picture must
+ * never be reused as the correct option's picture, and distractors differ).
+ */
+function makePictureOption(item, isCorrect) {
+  const opt = { id: item.id, label: '', isCorrect, rep: REPRESENTATIONS.PICTURE };
+  const src = imageFor(item);
+  if (src) opt.imageSrc = src;
+  if (item.emoji !== undefined) opt.emoji = item.emoji;
+  return opt;
+}
+
+/** A colour SWATCH option: a solid tile in the item's colour, no text (rule A). */
+function makeSwatchOption(item, isCorrect) {
+  return { id: item.id, label: '', isCorrect, colorHex: item.colorHex, rep: REPRESENTATIONS.SWATCH };
+}
+
+/** The English pronunciation descriptor to replay after a correct answer (C3). */
+function englishSpeak(item) {
+  return { text: item.prompt, lang: 'en-US', audioKey: item.audioKey, audioSrc: audioForEnglish(item) };
+}
+
 // -----------------------------------------------------------------------------
 // Generators
 // -----------------------------------------------------------------------------
@@ -149,46 +199,162 @@ function makeOption(item, label, isCorrect) {
  * @param {Function} [params.rng] injected rng.
  * @returns {object} question spec
  */
-export function generateMultipleChoice({ item, pool = [], optionCount = 4, direction, rng } = {}) {
-  const isEnglish = item.moduleType === LEARNING_MODULES.ENGLISH && direction;
+export function generateMultipleChoice({ item, pool = [], optionCount = 4, direction, level = AGE_LEVELS.EARLY, rng } = {}) {
+  const module = item.moduleType;
   const distractorCount = Math.max(0, (optionCount || 1) - 1);
-  const distractors = pickDistractors(pool, [item.id], distractorCount, rng);
 
-  let prompt;
-  let correctLabel;
-  let labelFor;
-  if (isEnglish) {
-    const pair = translationPair(item, direction);
-    prompt = { text: pair.prompt, emoji: item.emoji, direction: pair.direction };
-    correctLabel = pair.answer;
-    labelFor = (it) => translationPair(it, direction).answer;
-  } else {
-    prompt = { text: item.prompt, emoji: item.emoji, colorHex: item.colorHex };
-    correctLabel = answerLabel(item);
-    labelFor = (it) => answerLabel(it);
+  // ---------------------------------------------------------------------------
+  // NUMBERS: never digit -> identical digit (rule C1). A bare digit prompt whose
+  // options are digits lets the child answer by matching the same symbol. Counting
+  // (quantity -> digit) is the valid number MC and is produced by COUNT_CHOOSE, so
+  // we skip plain-digit MC entirely and let the composer pick COUNT_CHOOSE instead.
+  // ---------------------------------------------------------------------------
+  if (module === LEARNING_MODULES.NUMBERS) {
+    return null;
   }
 
-  const options = [
-    makeOption(item, correctLabel, true),
-    ...distractors.map((d) => makeOption(d, labelFor(d), false))
-  ];
+  // ---------------------------------------------------------------------------
+  // COLORS: pair a NAMED colour (spoken; text shown only for readers at LATE)
+  // with colour SWATCH options. The header carries NO swatch, so the correct tile
+  // is never a copy of the prompt (rule C1). Non-readers answer by tapping the
+  // colour they hear (rule A).
+  // ---------------------------------------------------------------------------
+  if (module === LEARNING_MODULES.COLORS) {
+    const distractors = pickDistractors(pool, [item.id], distractorCount, rng);
+    const options = shuffle(
+      [makeSwatchOption(item, true), ...distractors.map((d) => makeSwatchOption(d, false))],
+      rng
+    );
+    const prompt = {
+      speak: { text: item.answer, lang: 'pl-PL', audioKey: item.audioKey },
+      promptRep: REPRESENTATIONS.SPOKEN
+    };
+    if (level === AGE_LEVELS.LATE) prompt.text = item.prompt; // readers may see the word
+    return {
+      type: TASK_TYPES.MULTIPLE_CHOICE,
+      moduleType: module,
+      item,
+      prompt,
+      options,
+      correctItemId: item.id,
+      meta: { promptRep: prompt.promptRep, answerRep: REPRESENTATIONS.SWATCH }
+    };
+  }
 
+  // ---------------------------------------------------------------------------
+  // POLISH LETTERS: spoken letter sound (+ example-word picture) -> tap the LETTER
+  // glyph. Prompt is a sound/picture, options are glyphs, so the two never match
+  // as identical symbols (C1/C2).
+  // ---------------------------------------------------------------------------
+  if (module === LEARNING_MODULES.POLISH_LETTERS) {
+    const distractors = pickDistractors(pool, [item.id], distractorCount, rng);
+    const options = shuffle(
+      [
+        { id: item.id, label: item.prompt, isCorrect: true, rep: REPRESENTATIONS.GLYPH },
+        ...distractors.map((d) => ({ id: d.id, label: d.prompt, isCorrect: false, rep: REPRESENTATIONS.GLYPH }))
+      ],
+      rng
+    );
+    const prompt = {
+      speak: { text: item.prompt, lang: 'pl-PL', audioKey: item.audioKey },
+      picture: { emoji: item.emoji, imageSrc: imageFor(item) },
+      promptRep: REPRESENTATIONS.PICTURE
+    };
+    return {
+      type: TASK_TYPES.MULTIPLE_CHOICE,
+      moduleType: module,
+      item,
+      prompt,
+      options,
+      correctItemId: item.id,
+      meta: { promptRep: prompt.promptRep, answerRep: REPRESENTATIONS.GLYPH }
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // ENGLISH (rule C3): the learning stimulus is the ENGLISH word (spoken, and
+  // written only at LATE). The child links that English sound/spelling to MEANING.
+  //   * EARLY: hear the English word -> tap the matching meaning PICTURE. Options
+  //     are pictures (never text to read); the prompt shows NO picture so the
+  //     answer is not given away (C2).
+  //   * LATE (readers): show the written English word -> tap the meaning picture,
+  //     OR (reading English) English text options. We use picture options so the
+  //     meaning link is explicit; English text stays available via LATE reading
+  //     tasks elsewhere. Either way the prompt is English, never Polish.
+  // The correct English pronunciation is always exposed in meta.speak so the
+  // renderer can replay it after a correct answer (playback happens in FEAT-003).
+  // ---------------------------------------------------------------------------
+  if (module === LEARNING_MODULES.ENGLISH) {
+    // Distractors must have a distinct meaning picture from the correct item (C2).
+    const distractors = pickDistractors(pool, [item.id], distractorCount, rng)
+      .filter((d) => (d.emoji || '') !== (item.emoji || ''));
+    const options = shuffle(
+      [makePictureOption(item, true), ...distractors.map((d) => makePictureOption(d, false))],
+      rng
+    );
+    const prompt = {
+      speak: englishSpeak(item),
+      promptRep: level === AGE_LEVELS.LATE ? REPRESENTATIONS.WORD : REPRESENTATIONS.SPOKEN
+    };
+    if (level === AGE_LEVELS.LATE) prompt.text = item.prompt; // readers see the English word
+    return {
+      type: TASK_TYPES.MULTIPLE_CHOICE,
+      moduleType: module,
+      item,
+      prompt,
+      options,
+      correctItemId: item.id,
+      meta: {
+        promptRep: prompt.promptRep,
+        answerRep: REPRESENTATIONS.PICTURE,
+        englishSpeak: prompt.speak
+      }
+    };
+  }
+
+  // Fallback (unknown module): classic word MC.
+  const distractors = pickDistractors(pool, [item.id], distractorCount, rng);
+  const options = shuffle(
+    [makeOption(item, answerLabel(item), true), ...distractors.map((d) => makeOption(d, answerLabel(d), false))],
+    rng
+  );
   return {
     type: TASK_TYPES.MULTIPLE_CHOICE,
-    moduleType: item.moduleType,
+    moduleType: module,
     item,
-    prompt,
-    options: shuffle(options, rng),
+    prompt: { text: item.prompt, emoji: item.emoji },
+    options,
     correctItemId: item.id,
-    meta: { direction: isEnglish ? prompt.direction : undefined }
+    meta: {}
   };
 }
 
 /**
- * Bidirectional translation convenience wrapper (English). Defaults to EN->PL.
+ * Bidirectional English translation with TEXT options (reading). This is a
+ * READERS-ONLY task (LATE): both sides are written words, so it must never be used
+ * for EARLY / non-readers. It links the English spelling to meaning via the Polish
+ * word for a child who can already read. The correct English pronunciation is
+ * exposed in meta.englishSpeak so the renderer can replay it after a correct
+ * answer (rule C3). Defaults to EN->PL.
  */
 export function generateTranslation({ item, pool = [], optionCount = 4, direction = DIRECTIONS.EN_TO_PL, rng } = {}) {
-  return generateMultipleChoice({ item, pool, optionCount, direction, rng });
+  const distractorCount = Math.max(0, (optionCount || 1) - 1);
+  const distractors = pickDistractors(pool, [item.id], distractorCount, rng);
+  const pair = translationPair(item, direction);
+  const labelFor = (it) => translationPair(it, direction).answer;
+  const options = shuffle(
+    [makeOption(item, pair.answer, true), ...distractors.map((d) => makeOption(d, labelFor(d), false))],
+    rng
+  );
+  return {
+    type: TASK_TYPES.MULTIPLE_CHOICE,
+    moduleType: item.moduleType,
+    item,
+    prompt: { text: pair.prompt, emoji: item.emoji, direction: pair.direction, promptRep: REPRESENTATIONS.WORD },
+    options,
+    correctItemId: item.id,
+    meta: { direction: pair.direction, promptRep: REPRESENTATIONS.WORD, answerRep: REPRESENTATIONS.WORD, englishSpeak: englishSpeak(item) }
+  };
 }
 
 /**
@@ -198,32 +364,49 @@ export function generateTranslation({ item, pool = [], optionCount = 4, directio
  *
  * @returns {object} spec whose meta.pairs is an array of {id, itemId, word, emoji?, colorHex?}
  */
-export function generateMatchPairs({ items = [], pairCount = 4, rng } = {}) {
+export function generateMatchPairs({ items = [], pairCount = 4, level = AGE_LEVELS.EARLY, rng } = {}) {
   const chosen = shuffle(items, rng).slice(0, Math.max(0, pairCount));
-  const pairs = chosen.map((it) => ({
-    id: it.id,
-    itemId: it.id,
-    word: it.answer,
-    prompt: it.prompt,
-    emoji: it.emoji,
-    colorHex: it.colorHex
-  }));
   const first = chosen[0] || null;
+  const module = first ? first.moduleType : undefined;
+  const isEnglish = module === LEARNING_MODULES.ENGLISH;
+
+  // The "sound/word" side of each pair. Rule C3: in English this MUST be the
+  // ENGLISH word/sound (never the Polish translation). English text is shown only
+  // for readers (LATE); for EARLY the card carries the spoken English word and no
+  // Polish text. Colours use the Polish colour NAME paired with the SWATCH; letters
+  // use the letter GLYPH paired with its example picture.
+  const pairs = chosen.map((it) => {
+    const base = { id: it.id, itemId: it.id, emoji: it.emoji, colorHex: it.colorHex, imageSrc: imageFor(it) };
+    if (isEnglish) {
+      return {
+        ...base,
+        word: level === AGE_LEVELS.LATE ? it.prompt : '', // English text for readers only
+        speak: englishSpeak(it)
+      };
+    }
+    if (module === LEARNING_MODULES.COLORS) {
+      return { ...base, word: it.answer, speak: { text: it.answer, lang: 'pl-PL', audioKey: it.audioKey } };
+    }
+    // Letters and other modules: show the glyph/prompt.
+    return { ...base, word: it.prompt, speak: { text: it.prompt, lang: 'pl-PL', audioKey: it.audioKey } };
+  });
+
   // Options mirror the pairs so the spec has a uniform shape; each pair "matches
   // itself" so isCorrect is true for the intended pairing.
-  const options = chosen.map((it) => makeOption(it, it.answer, true));
+  const options = chosen.map((it) => makeOption(it, isEnglish ? it.prompt : it.answer, true));
   return {
     type: TASK_TYPES.MATCH_PAIRS,
-    moduleType: first ? first.moduleType : undefined,
+    moduleType: module,
     item: first,
     prompt: { text: 'Połącz w pary' },
     options,
     correctItemId: first ? first.id : null,
     meta: {
       pairs,
-      wordCards: shuffle(pairs.map((p) => ({ pairId: p.id, label: p.word })), rng),
+      isEnglish,
+      wordCards: shuffle(pairs.map((p) => ({ pairId: p.id, label: p.word, speak: p.speak })), rng),
       imageCards: shuffle(
-        pairs.map((p) => ({ pairId: p.id, emoji: p.emoji, colorHex: p.colorHex })),
+        pairs.map((p) => ({ pairId: p.id, emoji: p.emoji, colorHex: p.colorHex, imageSrc: p.imageSrc })),
         rng
       )
     }
@@ -235,41 +418,100 @@ export function generateMatchPairs({ items = [], pairCount = 4, rng } = {}) {
  * matching image/word. `direction` (English) selects the spoken language and
  * option side. meta.speak describes what the UI should speak.
  */
-export function generateListenChoose({ item, pool = [], optionCount = 4, direction, rng } = {}) {
-  const isEnglish = item.moduleType === LEARNING_MODULES.ENGLISH && direction;
+export function generateListenChoose({ item, pool = [], optionCount = 4, level = AGE_LEVELS.EARLY, rng } = {}) {
+  const module = item.moduleType;
   const distractorCount = Math.max(0, (optionCount || 1) - 1);
-  const distractors = pickDistractors(pool, [item.id], distractorCount, rng);
 
-  // What to speak, and which side to show as tappable options.
-  let speakText;
-  let speakLang;
-  let labelFor;
-  if (isEnglish) {
-    const pair = translationPair(item, direction);
-    // We speak the PROMPT side of the pair; options show the ANSWER side.
-    speakText = pair.prompt;
-    speakLang = direction === DIRECTIONS.PL_TO_EN ? 'pl-PL' : 'en-US';
-    labelFor = (it) => translationPair(it, direction).answer;
-  } else {
-    speakText = item.answer;
-    speakLang = 'pl-PL';
-    labelFor = (it) => answerLabel(it);
+  // ENGLISH (rule C3): ALWAYS speak the ENGLISH word and let the child pick the
+  // matching meaning PICTURE. The old PL->EN "speak Polish, choose English word"
+  // variant is gone - Polish audio is never the material for learning English.
+  if (module === LEARNING_MODULES.ENGLISH) {
+    const distractors = pickDistractors(pool, [item.id], distractorCount, rng)
+      .filter((d) => (d.emoji || '') !== (item.emoji || ''));
+    const options = shuffle(
+      [makePictureOption(item, true), ...distractors.map((d) => makePictureOption(d, false))],
+      rng
+    );
+    return {
+      type: TASK_TYPES.LISTEN_CHOOSE,
+      moduleType: module,
+      item,
+      prompt: { emoji: '🔊', promptRep: REPRESENTATIONS.SPOKEN },
+      options,
+      correctItemId: item.id,
+      meta: {
+        speak: englishSpeak(item),
+        englishSpeak: englishSpeak(item),
+        promptRep: REPRESENTATIONS.SPOKEN,
+        answerRep: REPRESENTATIONS.PICTURE
+      }
+    };
   }
 
-  const options = [
-    makeOption(item, labelFor(item), true),
-    ...distractors.map((d) => makeOption(d, labelFor(d), false))
-  ];
+  // COLORS: hear the colour NAME (Polish) -> tap the matching SWATCH.
+  if (module === LEARNING_MODULES.COLORS) {
+    const distractors = pickDistractors(pool, [item.id], distractorCount, rng);
+    const options = shuffle(
+      [makeSwatchOption(item, true), ...distractors.map((d) => makeSwatchOption(d, false))],
+      rng
+    );
+    return {
+      type: TASK_TYPES.LISTEN_CHOOSE,
+      moduleType: module,
+      item,
+      prompt: { emoji: '🔊', promptRep: REPRESENTATIONS.SPOKEN },
+      options,
+      correctItemId: item.id,
+      meta: {
+        speak: { text: item.answer, lang: 'pl-PL', audioKey: item.audioKey },
+        promptRep: REPRESENTATIONS.SPOKEN,
+        answerRep: REPRESENTATIONS.SWATCH
+      }
+    };
+  }
 
+  // POLISH LETTERS: hear the letter sound -> tap the matching letter GLYPH.
+  if (module === LEARNING_MODULES.POLISH_LETTERS) {
+    const distractors = pickDistractors(pool, [item.id], distractorCount, rng);
+    const options = shuffle(
+      [
+        { id: item.id, label: item.prompt, isCorrect: true, rep: REPRESENTATIONS.GLYPH },
+        ...distractors.map((d) => ({ id: d.id, label: d.prompt, isCorrect: false, rep: REPRESENTATIONS.GLYPH }))
+      ],
+      rng
+    );
+    return {
+      type: TASK_TYPES.LISTEN_CHOOSE,
+      moduleType: module,
+      item,
+      prompt: { emoji: '🔊', promptRep: REPRESENTATIONS.SPOKEN },
+      options,
+      correctItemId: item.id,
+      meta: {
+        speak: { text: item.prompt, lang: 'pl-PL', audioKey: item.audioKey },
+        promptRep: REPRESENTATIONS.SPOKEN,
+        answerRep: REPRESENTATIONS.GLYPH
+      }
+    };
+  }
+
+  // Fallback (e.g. NUMBERS if ever routed here): hear the word, pick a picture.
+  const distractors = pickDistractors(pool, [item.id], distractorCount, rng);
+  const options = shuffle(
+    [makePictureOption(item, true), ...distractors.map((d) => makePictureOption(d, false))],
+    rng
+  );
   return {
     type: TASK_TYPES.LISTEN_CHOOSE,
-    moduleType: item.moduleType,
+    moduleType: module,
     item,
-    prompt: { emoji: '🔊', direction: isEnglish ? direction : undefined },
-    options: shuffle(options, rng),
+    prompt: { emoji: '🔊', promptRep: REPRESENTATIONS.SPOKEN },
+    options,
     correctItemId: item.id,
     meta: {
-      speak: { text: speakText, lang: speakLang, audioKey: item.audioKey }
+      speak: { text: item.answer, lang: 'pl-PL', audioKey: item.audioKey },
+      promptRep: REPRESENTATIONS.SPOKEN,
+      answerRep: REPRESENTATIONS.PICTURE
     }
   };
 }
@@ -338,7 +580,7 @@ export function isSpellingCorrect(tiles, target) {
  * @param {boolean} [params.forceTruth] force a true (or false) case (for tests).
  * @param {Function} [params.rng]
  */
-export function generateTrueFalse({ item, pool = [], forceTruth, rng } = {}) {
+export function generateTrueFalse({ item, pool = [], forceTruth, level = AGE_LEVELS.EARLY, rng } = {}) {
   const distractor = pickDistractors(pool, [item.id], 1, rng)[0] || null;
   // If we cannot find a distractor, we can only make a TRUE statement.
   let makeTrue;
@@ -347,25 +589,91 @@ export function generateTrueFalse({ item, pool = [], forceTruth, rng } = {}) {
   } else {
     makeTrue = distractor ? randInt(rng, 2) === 0 : true;
   }
+  const module = item.moduleType;
 
-  const statementItem = makeTrue ? item : distractor;
-  const statementLabel = statementItem.answer;
+  // ENGLISH (rule C3): show the item's MEANING picture and an ENGLISH word/sound;
+  // ask whether the spoken/written English word names the picture. TRUE uses the
+  // item's own English word, FALSE a distractor's English word. Never a Polish
+  // word. The spoken English word (whichever is presented) is exposed so the
+  // renderer plays it, and the CORRECT English pronunciation is replayed after a
+  // correct answer.
+  if (module === LEARNING_MODULES.ENGLISH) {
+    const spokenItem = makeTrue ? item : distractor;
+    const prompt = {
+      picture: { emoji: item.emoji, imageSrc: imageFor(item) },
+      promptRep: REPRESENTATIONS.PICTURE
+    };
+    // For readers (LATE) also show the English word text under the picture.
+    if (level === AGE_LEVELS.LATE) prompt.text = spokenItem.prompt;
+    return {
+      type: TASK_TYPES.TRUE_FALSE,
+      moduleType: module,
+      item,
+      prompt,
+      options: [
+        { id: 'true', label: 'Tak', isCorrect: makeTrue },
+        { id: 'false', label: 'Nie', isCorrect: !makeTrue }
+      ],
+      correctItemId: makeTrue ? 'true' : 'false',
+      meta: {
+        expected: makeTrue,
+        // What English word is being SPOKEN as the statement.
+        speak: englishSpeak(spokenItem),
+        // The CORRECT English pronunciation for the pictured item, replayed after
+        // a correct answer regardless of whether the statement was true or false.
+        englishSpeak: englishSpeak(item),
+        promptRep: REPRESENTATIONS.PICTURE
+      }
+    };
+  }
 
+  // COLORS: show a SWATCH and speak a colour NAME; is the name the swatch's colour?
+  if (module === LEARNING_MODULES.COLORS) {
+    const namedItem = makeTrue ? item : distractor;
+    const prompt = { colorHex: item.colorHex, promptRep: REPRESENTATIONS.SWATCH };
+    if (level === AGE_LEVELS.LATE) prompt.text = namedItem.answer;
+    return {
+      type: TASK_TYPES.TRUE_FALSE,
+      moduleType: module,
+      item,
+      prompt,
+      options: [
+        { id: 'true', label: 'Tak', isCorrect: makeTrue },
+        { id: 'false', label: 'Nie', isCorrect: !makeTrue }
+      ],
+      correctItemId: makeTrue ? 'true' : 'false',
+      meta: {
+        expected: makeTrue,
+        speak: { text: namedItem.answer, lang: 'pl-PL', audioKey: namedItem.audioKey },
+        promptRep: REPRESENTATIONS.SWATCH
+      }
+    };
+  }
+
+  // Default (letters / other): show the item's picture and speak a word; TRUE when
+  // the spoken word names the picture. Text label shown only at LATE.
+  const spokenItem = makeTrue ? item : distractor;
+  const prompt = {
+    emoji: item.emoji,
+    picture: { emoji: item.emoji, imageSrc: imageFor(item) },
+    promptRep: REPRESENTATIONS.PICTURE
+  };
+  if (level === AGE_LEVELS.LATE) prompt.text = spokenItem.answer;
   return {
     type: TASK_TYPES.TRUE_FALSE,
-    moduleType: item.moduleType,
+    moduleType: module,
     item,
-    prompt: {
-      text: statementLabel,
-      emoji: item.emoji,
-      colorHex: item.colorHex
-    },
+    prompt,
     options: [
-      { id: 'true', label: 'Prawda', isCorrect: makeTrue },
-      { id: 'false', label: 'Fałsz', isCorrect: !makeTrue }
+      { id: 'true', label: 'Tak', isCorrect: makeTrue },
+      { id: 'false', label: 'Nie', isCorrect: !makeTrue }
     ],
     correctItemId: makeTrue ? 'true' : 'false',
-    meta: { expected: makeTrue, statement: statementLabel }
+    meta: {
+      expected: makeTrue,
+      speak: { text: spokenItem.answer, lang: 'pl-PL', audioKey: spokenItem.audioKey },
+      promptRep: REPRESENTATIONS.PICTURE
+    }
   };
 }
 
@@ -406,14 +714,30 @@ export function generateCountChoose({ task, count, emoji, optionCount = 4, maxNu
   const distractors = shuffle(candidates, rng).slice(0, distractorCount);
   const numberOptions = shuffle([theCount, ...distractors], rng);
 
+  // Rule C5: a concrete Polish prompt that names exactly what is shown, e.g.
+  // "Ile gwiazdek widzisz?" (the "Ile ...?" question governs the genitive plural).
+  // The number-agreeing count label (1 gwiazdka / 2 gwiazdki / 5 gwiazdek) is
+  // exposed for post-answer reinforcement. Prompt = QUANTITY, options = DIGIT, so
+  // the answer is never a copy of the prompt representation (rule C1).
+  const promptText = countingPrompt(glyph);
+  const countLabel = countingCountLabel(glyph, theCount);
+
   return {
     type: TASK_TYPES.COUNT_CHOOSE,
     moduleType: LEARNING_MODULES.NUMBERS,
     item,
-    prompt: { emoji: glyph, glyphs },
-    options: numberOptions.map((n) => ({ id: `n_${n}`, label: String(n), isCorrect: n === theCount })),
+    prompt: { text: promptText, emoji: glyph, glyphs, promptRep: REPRESENTATIONS.QUANTITY },
+    options: numberOptions.map((n) => ({ id: `n_${n}`, label: String(n), isCorrect: n === theCount, rep: REPRESENTATIONS.DIGIT })),
     correctItemId: `n_${theCount}`,
-    meta: { count: theCount, glyphs, glyph }
+    meta: {
+      count: theCount,
+      glyphs,
+      glyph,
+      promptText,
+      countLabel,
+      promptRep: REPRESENTATIONS.QUANTITY,
+      answerRep: REPRESENTATIONS.DIGIT
+    }
   };
 }
 
@@ -434,6 +758,9 @@ export function generateCountChoose({ task, count, emoji, optionCount = 4, maxNu
  */
 export function generateWhichMatches({ target, candidates = [], scene, colorLookup, rng, optionCount = 4 } = {}) {
   // --- find-color-in-scene variant ---
+  // The child hears/sees the target colour NAME and taps the matching SWATCH in
+  // the scene. Options are colour swatches (rule A / C1: not a text copy of the
+  // named target), and the correct swatch is not shown in the header prompt.
   if (scene) {
     const resolve = typeof colorLookup === 'function' ? colorLookup : () => null;
     const targetItem = resolve(scene.target) || { id: `color_${scene.target}`, moduleType: LEARNING_MODULES.COLORS, prompt: scene.target, answer: scene.target };
@@ -444,28 +771,51 @@ export function generateWhichMatches({ target, candidates = [], scene, colorLook
       type: TASK_TYPES.WHICH_MATCHES,
       moduleType: LEARNING_MODULES.COLORS,
       item: targetItem,
-      prompt: { text: scene.target, emoji: scene.emoji, description: scene.description },
-      options: optionItems.map((it) => makeOption(it, it.answer, it.id === targetItem.id)),
+      prompt: {
+        text: `Znajdź kolor: ${scene.target}`,
+        speak: { text: scene.target, lang: 'pl-PL', audioKey: targetItem.audioKey },
+        description: scene.description,
+        promptRep: REPRESENTATIONS.SPOKEN
+      },
+      options: optionItems.map((it) => makeSwatchOption(it, it.id === targetItem.id)),
       correctItemId: targetItem.id,
-      meta: { variant: 'find-color', sceneDescriptor: { id: scene.id, description: scene.description, emoji: scene.emoji, target: scene.target } }
+      meta: {
+        variant: 'find-color',
+        promptRep: REPRESENTATIONS.SPOKEN,
+        answerRep: REPRESENTATIONS.SWATCH,
+        sceneDescriptor: { id: scene.id, description: scene.description, emoji: scene.emoji, target: scene.target }
+      }
     };
   }
 
   // --- generic which-matches (word-mode) ---
+  // Only meaningful when the prompt and options are in different representations
+  // (rule C1). We speak/label the target and offer meaning PICTURES so the correct
+  // tile is not a copy of the prompt.
   const distractorCount = Math.max(0, (optionCount || 1) - 1);
-  const distractors = pickDistractors(candidates, [target.id], distractorCount, rng);
+  const distractors = pickDistractors(candidates, [target.id], distractorCount, rng)
+    .filter((d) => (d.emoji || '') !== (target.emoji || ''));
   const options = shuffle(
-    [makeOption(target, target.answer, true), ...distractors.map((d) => makeOption(d, d.answer, false))],
+    [makePictureOption(target, true), ...distractors.map((d) => makePictureOption(d, false))],
     rng
   );
+  const isEnglish = target.moduleType === LEARNING_MODULES.ENGLISH;
+  const prompt = isEnglish
+    ? { speak: englishSpeak(target), promptRep: REPRESENTATIONS.SPOKEN }
+    : { text: target.answer, speak: { text: target.answer, lang: 'pl-PL', audioKey: target.audioKey }, promptRep: REPRESENTATIONS.WORD };
   return {
     type: TASK_TYPES.WHICH_MATCHES,
     moduleType: target.moduleType,
     item: target,
-    prompt: { text: target.prompt, emoji: target.emoji, colorHex: target.colorHex },
+    prompt,
     options,
     correctItemId: target.id,
-    meta: { variant: 'which-matches' }
+    meta: {
+      variant: 'which-matches',
+      promptRep: prompt.promptRep,
+      answerRep: REPRESENTATIONS.PICTURE,
+      englishSpeak: isEnglish ? englishSpeak(target) : undefined
+    }
   };
 }
 
@@ -515,40 +865,55 @@ export function taskTypesForLevel(level, taskTypeMix) {
  * Returns null if the type cannot be generated for the given module/item, so the
  * composer can skip it without throwing.
  */
+/**
+ * A representative glyph for a counted digit, so the counting picture is a real
+ * object (not the bare digit). Cycles a small set of unambiguous glyphs.
+ */
+const COUNT_GLYPHS = ['⭐', '🍎', '🎈', '🐟', '🌼'];
+
 function generateForType(type, { item, pool, module, level, rng }) {
   switch (type) {
     case TASK_TYPES.MULTIPLE_CHOICE: {
-      if (module === LEARNING_MODULES.ENGLISH) {
-        const direction = randInt(rng, 2) === 0 ? DIRECTIONS.EN_TO_PL : DIRECTIONS.PL_TO_EN;
-        return generateMultipleChoice({ item, pool, direction, rng });
-      }
-      return generateMultipleChoice({ item, pool, rng });
+      // NUMBERS multiple choice is intentionally handled as COUNT_CHOOSE (quantity
+      // -> digit); a bare digit->digit MC is rejected by generateMultipleChoice.
+      return generateMultipleChoice({ item, pool, level, rng });
     }
     case TASK_TYPES.LISTEN_CHOOSE: {
-      const direction = module === LEARNING_MODULES.ENGLISH
-        ? (randInt(rng, 2) === 0 ? DIRECTIONS.EN_TO_PL : DIRECTIONS.PL_TO_EN)
-        : undefined;
-      return generateListenChoose({ item, pool, direction, rng });
+      // Numbers have no single meaning picture (their emoji IS the digit), so a
+      // listen->picture task would echo the digit; skip and let COUNT_CHOOSE cover
+      // numbers.
+      if (module === LEARNING_MODULES.NUMBERS) return null;
+      return generateListenChoose({ item, pool, level, rng });
     }
     case TASK_TYPES.MATCH_PAIRS: {
+      if (module === LEARNING_MODULES.NUMBERS) return null;
       const items = [item, ...pickDistractors(pool, [item.id], 3, rng)];
-      return generateMatchPairs({ items, pairCount: items.length, rng });
+      return generateMatchPairs({ items, pairCount: items.length, level, rng });
     }
-    case TASK_TYPES.TRUE_FALSE:
-      return generateTrueFalse({ item, pool, rng });
+    case TASK_TYPES.TRUE_FALSE: {
+      if (module === LEARNING_MODULES.NUMBERS) return null;
+      return generateTrueFalse({ item, pool, level, rng });
+    }
     case TASK_TYPES.SPELL_WORD: {
+      // Reading/spelling is a LATE-only, readers-only task (rule A / C4). Never for
+      // EARLY. Letters also gate this behind their first stage in buildLesson.
+      if (level !== AGE_LEVELS.LATE) return null;
       const word = item.exampleWord || (item.moduleType === LEARNING_MODULES.ENGLISH ? item.prompt : null);
       if (!word) return null;
       return generateSpellWord({ item, target: word, rng });
     }
-    case TASK_TYPES.WHICH_MATCHES:
+    case TASK_TYPES.WHICH_MATCHES: {
+      // Numbers would be digit->digit here; skip.
+      if (module === LEARNING_MODULES.NUMBERS) return null;
       return generateWhichMatches({ target: item, candidates: pool, rng });
+    }
     case TASK_TYPES.COUNT_CHOOSE: {
       // Only meaningful for the NUMBERS module; derive a count from the digit.
       if (module !== LEARNING_MODULES.NUMBERS) return null;
       const count = Number.parseInt(item.prompt, 10);
       if (Number.isNaN(count)) return null;
-      return generateCountChoose({ count, emoji: '⭐', rng });
+      const glyph = COUNT_GLYPHS[randInt(rng, COUNT_GLYPHS.length)];
+      return generateCountChoose({ count, emoji: glyph, rng });
     }
     default:
       return null;
@@ -571,13 +936,33 @@ function generateForType(type, { item, pool, module, level, rng }) {
  * @returns {Array<object>} ordered array of question specs (length up to questionCount).
  */
 export function buildLesson({ module, level = AGE_LEVELS.EARLY, stage, availableItems = [], questionCount = 6, taskTypeMix, rng } = {}) {
-  const items = Array.isArray(availableItems) ? availableItems.filter(Boolean) : [];
-  const types = taskTypesForLevel(level, taskTypeMix);
+  let items = Array.isArray(availableItems) ? availableItems.filter(Boolean) : [];
+
+  // Rule C4 - real progression for LETTERS. When this is the FIRST letter stage
+  // (stage 1 or unspecified), restrict to plain Latin letters WITHOUT Polish
+  // diacritics (ą, ę, ó, ł, ś, ć, ń, ź, ż) so a beginner does not meet diacritic
+  // letters on lesson one. Diacritic letters unlock at higher stages. Filtering
+  // here means the composer never even considers a diacritic letter for stage 1.
+  const isFirstLetterStage =
+    module === LEARNING_MODULES.POLISH_LETTERS && (stage === undefined || stage <= 1);
+  if (isFirstLetterStage) {
+    items = items.filter((it) => !hasPolishDiacritic(it.prompt));
+  }
+
+  let types = taskTypesForLevel(level, taskTypeMix);
+
+  // Rule C4 - SPELL_WORD (building a word from letters) never appears at the first
+  // letter stage. Combined with the LATE-only gate in generateForType, EARLY never
+  // spells at all and letter lesson one is limited to recognition tasks.
+  if (isFirstLetterStage) {
+    types = types.filter((t) => t !== TASK_TYPES.SPELL_WORD);
+  }
+
   const specs = [];
   if (items.length === 0 || types.length === 0) return specs;
 
   let attempts = 0;
-  const maxAttempts = questionCount * 6 + 12;
+  const maxAttempts = questionCount * 8 + 16;
   let itemCursor = 0;
   const shuffledItems = shuffle(items, rng);
 
@@ -585,8 +970,17 @@ export function buildLesson({ module, level = AGE_LEVELS.EARLY, stage, available
     attempts++;
     const item = shuffledItems[itemCursor % shuffledItems.length];
     itemCursor++;
-    const type = types[randInt(rng, types.length)];
-    const spec = generateForType(type, { item, pool: items, module, level, rng });
+    // Prefer a randomly chosen type, but if it cannot make a VALID spec for this
+    // item/module/level (generateForType returns null rather than emitting a
+    // flawed one), fall through the remaining allowed types so modules with few
+    // valid types (e.g. NUMBERS -> COUNT_CHOOSE only) still fill reliably. We
+    // never emit a flawed spec; we only skip invalid (type, item) combinations.
+    const start = randInt(rng, types.length);
+    let spec = null;
+    for (let k = 0; k < types.length && !spec; k++) {
+      const type = types[(start + k) % types.length];
+      spec = generateForType(type, { item, pool: items, module, level, rng });
+    }
     if (spec) specs.push(spec);
   }
 

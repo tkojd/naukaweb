@@ -109,8 +109,33 @@ function color(name, hex, opts) {
   );
 }
 
+/**
+ * The nine Polish diacritic letters. A letter carrying any of these characters is
+ * NOT introduced on the first letter stage (rule C4): a child meeting letters for
+ * the first time should start with the plain Latin letters shared with the sounds
+ * they already know, before the specifically-Polish diacritic letters.
+ */
+export const POLISH_DIACRITIC_CHARS = Object.freeze(['ą', 'ę', 'ó', 'ł', 'ś', 'ć', 'ń', 'ź', 'ż']);
+
+/**
+ * Whether a single letter (any case) is a Polish diacritic letter (ą, ę, ó, ł,
+ * ś, ć, ń, ź, ż). Pure helper used to gate the first letter stage.
+ * @param {string} char a single-character string.
+ * @returns {boolean}
+ */
+export function hasPolishDiacritic(char) {
+  if (typeof char !== 'string' || char.length === 0) return false;
+  return POLISH_DIACRITIC_CHARS.includes(char.toLowerCase());
+}
+
 function letter(char, example, emoji, opts) {
   const lower = char.toLowerCase();
+  // Progression (C4): diacritic letters are gated behind the plain Latin letters.
+  // Stage 1 = non-diacritic letters (first lesson); diacritic letters unlock at
+  // stage 2 unless the caller overrides. This is additive metadata; every letter
+  // stays present and defaults keep older callers working (stage() defaults to 1).
+  const defaultStage = hasPolishDiacritic(char) ? 2 : 1;
+  const merged = { stage: defaultStage, ...(opts || {}) };
   return withMeta(
     {
       id: `letter_${lower}`,
@@ -123,7 +148,7 @@ function letter(char, example, emoji, opts) {
       category: 'letters',
       audioKey: `audio_letter_${lower}`
     },
-    opts
+    merged
   );
 }
 
@@ -752,4 +777,114 @@ export function translationPair(item, direction) {
     return { prompt: item.answer, answer: item.prompt, direction };
   }
   return { prompt: item.prompt, answer: item.answer, direction: 'EN_TO_PL' };
+}
+
+// -----------------------------------------------------------------------------
+// Counting nouns + Polish count-noun agreement (rule C5).
+// -----------------------------------------------------------------------------
+//
+// A concrete counting prompt names EXACTLY what the child sees, e.g. "Ile
+// gwiazdek widzisz?" instead of a vague "policz i wybierz liczbę". The chosen
+// noun must agree with the counted quantity in Polish, which has three plural
+// forms:
+//   * 1                        -> singular       (1 gwiazdka)
+//   * 2, 3, 4 (but not 12-14)  -> "few" plural    (2 gwiazdki)
+//   * 0, 5+   (and 12-14)      -> "many" genitive (5 gwiazdek)
+// These forms are supplied per noun as data so the prompt is grammatically
+// correct for every counting glyph.
+
+/**
+ * Per counting-glyph noun with its three Polish grammatical-number forms. The
+ * `one` form is used for a count of exactly 1, `few` for counts ending 2-4
+ * (excluding the teens), and `many` for everything else (0, 5-21, 25+, ...).
+ * Keyed by the emoji glyph the counting task repeats.
+ */
+export const COUNTING_NOUNS = Object.freeze({
+  '⭐': { one: 'gwiazdka', few: 'gwiazdki', many: 'gwiazdek' },
+  '🍎': { one: 'jabłko', few: 'jabłka', many: 'jabłek' },
+  '🐱': { one: 'kot', few: 'koty', many: 'kotów' },
+  '🎈': { one: 'balon', few: 'balony', many: 'balonów' },
+  '🐟': { one: 'ryba', few: 'ryby', many: 'ryb' },
+  '🌼': { one: 'kwiatek', few: 'kwiatki', many: 'kwiatków' },
+  '🚗': { one: 'samochód', few: 'samochody', many: 'samochodów' },
+  '🌳': { one: 'drzewo', few: 'drzewa', many: 'drzew' }
+});
+
+/** Fallback noun forms when a glyph is not in COUNTING_NOUNS. */
+const DEFAULT_COUNTING_NOUN = Object.freeze({ one: 'obrazek', few: 'obrazki', many: 'obrazków' });
+
+/**
+ * The three Polish grammatical-number forms for a counting glyph, or a neutral
+ * fallback ("obrazek/obrazki/obrazków") when the glyph is unknown.
+ * @param {string} glyph the emoji repeated in the counting task.
+ * @returns {{one:string, few:string, many:string}}
+ */
+export function countingNounFor(glyph) {
+  return COUNTING_NOUNS[glyph] || DEFAULT_COUNTING_NOUN;
+}
+
+/**
+ * Select the Polish grammatical-number category for a count.
+ * @param {number} count a non-negative integer.
+ * @returns {'one'|'few'|'many'}
+ */
+export function polishPluralCategory(count) {
+  const n = Math.abs(Math.trunc(Number(count) || 0));
+  if (n === 1) return 'one';
+  const lastTwo = n % 100;
+  const last = n % 10;
+  if (last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return 'few';
+  return 'many';
+}
+
+/**
+ * The correctly-inflected noun for a count, given the three forms.
+ * @param {number} count a non-negative integer.
+ * @param {{one:string, few:string, many:string}} forms the three noun forms.
+ * @returns {string} the noun in the form agreeing with `count`.
+ */
+export function polishCountNoun(count, forms) {
+  const f = forms || DEFAULT_COUNTING_NOUN;
+  return f[polishPluralCategory(count)] || f.many;
+}
+
+/**
+ * A concrete Polish counting prompt for a glyph, e.g. countingPrompt('⭐') ->
+ * 'Ile gwiazdek widzisz?'. The Polish "Ile ... ?" question always governs the
+ * genitive plural ("many") form of the noun regardless of the answer, so this
+ * header form is constant per glyph. The number-agreeing forms (1 gwiazdka /
+ * 2 gwiazdki / 5 gwiazdek) are exposed separately via countingCountLabel for
+ * post-answer reinforcement copy.
+ * @param {string} glyph the counting glyph.
+ * @returns {string} the concrete prompt sentence.
+ */
+export function countingPrompt(glyph) {
+  const forms = countingNounFor(glyph);
+  // "Ile ... ?" always governs the genitive plural ("many") form in Polish.
+  return `Ile ${forms.many} widzisz?`;
+}
+
+/**
+ * A "<n> <noun>" label with correct agreement, e.g. '1 gwiazdka', '2 gwiazdki',
+ * '5 gwiazdek'. Used for post-answer reinforcement copy.
+ * @param {string} glyph the counting glyph.
+ * @param {number} count the quantity.
+ * @returns {string}
+ */
+export function countingCountLabel(glyph, count) {
+  return `${count} ${polishCountNoun(count, countingNounFor(glyph))}`;
+}
+
+// -----------------------------------------------------------------------------
+// Letter progression helper (rule C4).
+// -----------------------------------------------------------------------------
+
+/**
+ * The letters available for the FIRST letter stage: plain Latin letters WITHOUT
+ * Polish diacritics (no ą, ę, ó, ł, ś, ć, ń, ź, ż). Pure, derived from the
+ * catalog so it stays in sync with `polishLetters`.
+ * @returns {Array<object>} non-diacritic letter items.
+ */
+export function firstStageLetters() {
+  return polishLetters.filter((l) => !hasPolishDiacritic(l.prompt));
 }

@@ -2,9 +2,17 @@ import { describe, it, expect } from 'vitest';
 import { LEARNING_MODULES, AGE_LEVELS } from '../docs/js/logic/models.js';
 import {
   itemsFor,
+  itemsForLevel,
   englishWords,
   colorScenes,
-  colors
+  colors,
+  polishLetters,
+  numbers,
+  hasPolishDiacritic,
+  firstStageLetters,
+  countingPrompt,
+  countingCountLabel,
+  polishPluralCategory
 } from '../docs/js/logic/content.js';
 import {
   TASK_TYPES,
@@ -212,19 +220,28 @@ describe('generateSpellWord and isSpellingCorrect', () => {
 });
 
 describe('generateTrueFalse', () => {
-  it('produces a true case with the item own label', () => {
+  it('produces a true case that speaks the item own ENGLISH word (C3), not Polish', () => {
     const spec = generateTrueFalse({ item: catItem, pool: englishWords, forceTruth: true, rng: seqRng([0.1]) });
     expect(spec.type).toBe(TASK_TYPES.TRUE_FALSE);
     expect(spec.meta.expected).toBe(true);
-    expect(spec.meta.statement).toBe(catItem.answer);
+    // The spoken statement is the ENGLISH word (cat), never the Polish answer (kot).
+    expect(spec.meta.speak.text).toBe(catItem.prompt);
+    expect(spec.meta.speak.lang).toBe('en-US');
+    expect(spec.meta.speak.text).not.toBe(catItem.answer);
+    // The correct English pronunciation of the pictured item is available to replay.
+    expect(spec.meta.englishSpeak.text).toBe(catItem.prompt);
     expect(spec.correctItemId).toBe('true');
     expect(exactlyOneCorrect(spec)).toBe(true);
   });
 
-  it('produces a false case with a distractor label', () => {
+  it('produces a false case that speaks a DISTRACTOR English word (C3)', () => {
     const spec = generateTrueFalse({ item: catItem, pool: englishWords, forceTruth: false, rng: seqRng([0.2]) });
     expect(spec.meta.expected).toBe(false);
-    expect(spec.meta.statement).not.toBe(catItem.answer);
+    // A false statement speaks a different (distractor) English word.
+    expect(spec.meta.speak.text).not.toBe(catItem.prompt);
+    expect(spec.meta.speak.lang).toBe('en-US');
+    // The pictured item's correct pronunciation is still the cat's own English word.
+    expect(spec.meta.englishSpeak.text).toBe(catItem.prompt);
     expect(spec.correctItemId).toBe('false');
     expect(exactlyOneCorrect(spec)).toBe(true);
   });
@@ -299,7 +316,14 @@ describe('generateWhichMatches', () => {
     expect(spec.options.length).toBe(1 + scene.others.length);
     expect(exactlyOneCorrect(spec)).toBe(true);
     const correct = spec.options.find((o) => o.isCorrect);
-    expect(correct.label).toBe(scene.target);
+    // Options are colour SWATCHES (rule A/C1): no text label, a real colour tile,
+    // and the correct swatch matches the named target colour.
+    expect(correct.label).toBe('');
+    expect(correct.colorHex).toBe(lookup(scene.target).colorHex);
+    // The prompt names the target colour by word/audio, not by echoing a swatch.
+    expect(spec.prompt.speak.text).toBe(scene.target);
+    expect(spec.meta.answerRep).toBe('swatch');
+    expect(spec.meta.promptRep).toBe('spoken');
   });
 });
 
@@ -373,6 +397,26 @@ describe('buildLesson', () => {
     expect(specs.every((s) => s.type === TASK_TYPES.MULTIPLE_CHOICE)).toBe(true);
   });
 
+  it('NUMBERS lessons fill entirely with COUNT_CHOOSE (quantity->digit) and concrete prompts', () => {
+    // NUMBERS only supports COUNT_CHOOSE (a bare digit MC is rejected), so the
+    // composer must still fill the lesson by falling through to the valid type.
+    const specs = buildLesson({
+      module: LEARNING_MODULES.NUMBERS,
+      level: AGE_LEVELS.EARLY,
+      availableItems: numberItems,
+      questionCount: 6,
+      rng: seqRng([0.1, 0.83, 0.17, 0.66, 0.42, 0.29, 0.55, 0.7, 0.05, 0.9])
+    });
+    expect(specs.length).toBe(6);
+    expect(specs.every((s) => s.type === TASK_TYPES.COUNT_CHOOSE)).toBe(true);
+    for (const s of specs) {
+      expect(s.meta.promptRep).toBe('quantity');
+      expect(s.meta.answerRep).toBe('digit');
+      expect(typeof s.prompt.text).toBe('string');
+      expect(s.prompt.text.startsWith('Ile ')).toBe(true);
+    }
+  });
+
   it('returns an empty array for empty input instead of throwing', () => {
     expect(buildLesson({ module: LEARNING_MODULES.COLORS, availableItems: [] })).toEqual([]);
     expect(buildLesson({})).toEqual([]);
@@ -393,5 +437,238 @@ describe('graceful degradation on tiny pools', () => {
     const spec = generateMultipleChoice({ item: catItem, pool: [catItem], optionCount: 4, rng: seqRng([0.5]) });
     expect(spec.options.length).toBe(1);
     expect(exactlyOneCorrect(spec)).toBe(true);
+  });
+});
+
+// =============================================================================
+// DYDACTIC RULE ENFORCEMENT (A, C1-C5). These tests would FAIL if any rule were
+// reverted to the old flawed behaviour, so they guard the pedagogy directly.
+// =============================================================================
+
+const nonDiacriticLetters = polishLetters.filter((l) => !hasPolishDiacritic(l.prompt));
+const englishAnimalsWithPics = englishWords.filter((w) => w.category === 'animals');
+
+function correctOption(spec) {
+  return spec.options.find((o) => o.isCorrect);
+}
+function distractorOptions(spec) {
+  return spec.options.filter((o) => !o.isCorrect);
+}
+
+describe('RULE C1: correct option is a DIFFERENT representation than the prompt', () => {
+  it('NUMBERS: plain digit->digit multiple choice is rejected (returns null)', () => {
+    const four = numbers.find((n) => n.id === 'number_4');
+    // Old behaviour showed "4" in the header and offered "4" as an option; the
+    // engine now refuses to build that, forcing a quantity<->digit COUNT_CHOOSE.
+    expect(generateMultipleChoice({ item: four, pool: numbers, rng: seqRng([0.5]) })).toBeNull();
+  });
+
+  it('NUMBERS COUNT_CHOOSE pairs a QUANTITY prompt with DIGIT options (never digit->digit)', () => {
+    const spec = generateCountChoose({ count: 4, emoji: '⭐', rng: seqRng([0.1, 0.4, 0.7, 0.9]) });
+    expect(spec.meta.promptRep).toBe('quantity');
+    expect(spec.meta.answerRep).toBe('digit');
+    expect(spec.meta.promptRep).not.toBe(spec.meta.answerRep);
+    // The prompt shows a group of glyphs, never the digit itself.
+    expect(spec.prompt.glyphs.length).toBe(4);
+    expect(spec.prompt.text).not.toContain('4');
+  });
+
+  it('COLORS multiple choice puts NO swatch in the prompt and uses swatch options', () => {
+    const red = colors[0];
+    const spec = generateMultipleChoice({ item: red, pool: colors, level: AGE_LEVELS.EARLY, rng: seqRng([0.2, 0.5, 0.8, 0.3]) });
+    // Prompt carries the spoken colour name, not a colour swatch identical to a tile.
+    expect(spec.prompt.colorHex).toBeUndefined();
+    expect(spec.prompt.speak.text).toBe(red.prompt);
+    expect(spec.meta.promptRep).toBe('spoken');
+    expect(spec.meta.answerRep).toBe('swatch');
+    // Every option is a real swatch (colorHex), no bare text label.
+    for (const o of spec.options) {
+      expect(typeof o.colorHex).toBe('string');
+      expect(o.label).toBe('');
+    }
+  });
+});
+
+describe('RULE C2: the prompt picture never appears on the correct option; distractors differ', () => {
+  it('ENGLISH listen-choose: correct picture option is distinct from every distractor', () => {
+    const spec = generateListenChoose({ item: catItem, pool: englishAnimalsWithPics, level: AGE_LEVELS.EARLY, rng: seqRng([0.15, 0.35, 0.55, 0.75]) });
+    const correct = correctOption(spec);
+    // The prompt is a sound only (no give-away picture in the header).
+    expect(spec.prompt.emoji).toBe('🔊');
+    expect(spec.prompt.picture).toBeUndefined();
+    // Distractor pictures differ from the correct picture (no identical icon).
+    for (const d of distractorOptions(spec)) {
+      expect(d.emoji).not.toBe(correct.emoji);
+    }
+  });
+
+  it('ENGLISH multiple choice: prompt has no picture and distractor emojis differ from the answer', () => {
+    const drawItem = englishWords.find((w) => w.id === 'english_draw');
+    const spec = generateMultipleChoice({ item: drawItem, pool: englishWords, level: AGE_LEVELS.EARLY, rng: seqRng([0.1, 0.3, 0.6, 0.8]) });
+    // Old bug: "draw" prompt with a palette icon AND a palette-icon correct option.
+    expect(spec.prompt.emoji).toBeUndefined();
+    const correct = correctOption(spec);
+    for (const d of distractorOptions(spec)) {
+      expect(d.emoji).not.toBe(correct.emoji);
+    }
+  });
+});
+
+describe('RULE C3: English teaches the ENGLISH sound/spelling <-> meaning, never Polish', () => {
+  it('EARLY English multiple choice: options are PICTURES, stimulus is spoken English', () => {
+    const spec = generateMultipleChoice({ item: catItem, pool: englishAnimalsWithPics, level: AGE_LEVELS.EARLY, rng: seqRng([0.2, 0.5, 0.8, 0.3]) });
+    expect(spec.meta.answerRep).toBe('picture');
+    // No English/Polish TEXT to read on the options for a non-reader.
+    for (const o of spec.options) expect(o.label).toBe('');
+    // The stimulus (and post-answer replay) is the ENGLISH word, never Polish.
+    expect(spec.meta.englishSpeak.text).toBe('cat');
+    expect(spec.meta.englishSpeak.lang).toBe('en-US');
+    expect(spec.meta.englishSpeak.text).not.toBe(catItem.answer);
+  });
+
+  it('EARLY English match-pairs pairs the ENGLISH word/sound with a picture, never Polish text', () => {
+    const items = englishAnimalsWithPics.slice(0, 4);
+    const spec = generateMatchPairs({ items, pairCount: 4, level: AGE_LEVELS.EARLY, rng: seqRng([0.2, 0.6, 0.4, 0.8]) });
+    expect(spec.meta.isEnglish).toBe(true);
+    for (const wc of spec.meta.wordCards) {
+      // For non-readers the word card carries spoken ENGLISH, no Polish text.
+      expect(wc.label).toBe('');
+      expect(wc.speak.lang).toBe('en-US');
+      const item = items.find((i) => i.id === wc.pairId);
+      expect(wc.speak.text).toBe(item.prompt); // English word
+      expect(wc.speak.text).not.toBe(item.answer); // never the Polish translation
+    }
+  });
+
+  it('LATE English match-pairs may show English TEXT for readers (never Polish)', () => {
+    const items = englishAnimalsWithPics.slice(0, 4);
+    const spec = generateMatchPairs({ items, pairCount: 4, level: AGE_LEVELS.LATE, rng: seqRng([0.2, 0.6, 0.4, 0.8]) });
+    for (const wc of spec.meta.wordCards) {
+      const item = items.find((i) => i.id === wc.pairId);
+      expect(wc.label).toBe(item.prompt); // English text, not Polish
+      expect(wc.label).not.toBe(item.answer);
+    }
+  });
+
+  it('English listen-choose always speaks ENGLISH and exposes the pronunciation to replay', () => {
+    const spec = generateListenChoose({ item: catItem, pool: englishAnimalsWithPics, level: AGE_LEVELS.EARLY, rng: seqRng([0.2, 0.4, 0.6]) });
+    expect(spec.meta.speak.lang).toBe('en-US');
+    expect(spec.meta.speak.text).toBe('cat');
+    expect(spec.meta.englishSpeak.text).toBe('cat');
+  });
+
+  it('buildLesson EARLY English never emits reading text on options and never Polish audio as the stimulus', () => {
+    const early = itemsForLevel(LEARNING_MODULES.ENGLISH, AGE_LEVELS.EARLY);
+    const specs = buildLesson({
+      module: LEARNING_MODULES.ENGLISH,
+      level: AGE_LEVELS.EARLY,
+      availableItems: early,
+      questionCount: 20,
+      rng: seqRng([0.05, 0.2, 0.35, 0.5, 0.65, 0.8, 0.95, 0.12, 0.28, 0.44])
+    });
+    expect(specs.length).toBe(20);
+    for (const spec of specs) {
+      // No spec speaks Polish as the English learning material.
+      if (spec.meta && spec.meta.speak) {
+        expect(spec.meta.speak.lang).toBe('en-US');
+      }
+      // Options never carry text to read for EARLY English.
+      for (const o of spec.options) {
+        if (o.id === 'true' || o.id === 'false') continue; // true/false controls
+        expect(o.label).toBe('');
+      }
+    }
+  });
+});
+
+describe('RULE C4: real progression - letters start simple, spelling unlocks later', () => {
+  it('firstStageLetters exposes only non-diacritic letters', () => {
+    expect(firstStageLetters().length).toBeGreaterThan(0);
+    for (const l of firstStageLetters()) {
+      expect(hasPolishDiacritic(l.prompt)).toBe(false);
+    }
+    // It is a strict subset (the diacritic letters are excluded).
+    expect(firstStageLetters().length).toBeLessThan(polishLetters.length);
+  });
+
+  it('buildLesson first letter stage contains NO diacritic letters', () => {
+    const specs = buildLesson({
+      module: LEARNING_MODULES.POLISH_LETTERS,
+      level: AGE_LEVELS.EARLY,
+      stage: 1,
+      availableItems: polishLetters,
+      questionCount: 30,
+      rng: seqRng([0.05, 0.2, 0.35, 0.5, 0.65, 0.8, 0.95, 0.12, 0.28, 0.44, 0.6, 0.72])
+    });
+    expect(specs.length).toBe(30);
+    for (const spec of specs) {
+      expect(hasPolishDiacritic(spec.item.prompt)).toBe(false);
+    }
+  });
+
+  it('buildLesson first letter stage never emits SPELL_WORD', () => {
+    const specs = buildLesson({
+      module: LEARNING_MODULES.POLISH_LETTERS,
+      level: AGE_LEVELS.LATE, // even for readers, stage 1 has no spelling
+      stage: 1,
+      availableItems: polishLetters,
+      questionCount: 30,
+      rng: () => 0.99 // steer toward the last allowed type
+    });
+    expect(specs.some((s) => s.type === TASK_TYPES.SPELL_WORD)).toBe(false);
+  });
+
+  it('EARLY never emits SPELL_WORD for any module', () => {
+    for (const mod of [LEARNING_MODULES.ENGLISH, LEARNING_MODULES.POLISH_LETTERS, LEARNING_MODULES.COLORS]) {
+      const specs = buildLesson({
+        module: mod,
+        level: AGE_LEVELS.EARLY,
+        availableItems: itemsFor(mod),
+        questionCount: 20,
+        rng: () => 0.99
+      });
+      expect(specs.some((s) => s.type === TASK_TYPES.SPELL_WORD)).toBe(false);
+    }
+  });
+
+  it('LATE letters at a higher stage CAN include diacritic letters and SPELL_WORD', () => {
+    const specs = buildLesson({
+      module: LEARNING_MODULES.POLISH_LETTERS,
+      level: AGE_LEVELS.LATE,
+      stage: 2,
+      availableItems: polishLetters,
+      questionCount: 40,
+      rng: () => 0.99
+    });
+    // At stage 2 the diacritic letters are back in the pool.
+    expect(specs.some((s) => hasPolishDiacritic(s.item.prompt))).toBe(true);
+  });
+});
+
+describe('RULE C5: concrete counting prompt with correct Polish agreement', () => {
+  it('countingPrompt names exactly what is shown (genitive plural question form)', () => {
+    expect(countingPrompt('⭐')).toBe('Ile gwiazdek widzisz?');
+    expect(countingPrompt('🍎')).toBe('Ile jabłek widzisz?');
+  });
+
+  it('polishPluralCategory picks one/few/many correctly', () => {
+    expect(polishPluralCategory(1)).toBe('one');
+    expect(polishPluralCategory(2)).toBe('few');
+    expect(polishPluralCategory(4)).toBe('few');
+    expect(polishPluralCategory(5)).toBe('many');
+    expect(polishPluralCategory(12)).toBe('many'); // teens are "many"
+    expect(polishPluralCategory(22)).toBe('few');
+  });
+
+  it('countingCountLabel agrees in number (1 gwiazdka / 2 gwiazdki / 5 gwiazdek)', () => {
+    expect(countingCountLabel('⭐', 1)).toBe('1 gwiazdka');
+    expect(countingCountLabel('⭐', 2)).toBe('2 gwiazdki');
+    expect(countingCountLabel('⭐', 5)).toBe('5 gwiazdek');
+  });
+
+  it('COUNT_CHOOSE spec carries the concrete prompt and agreeing count label', () => {
+    const spec = generateCountChoose({ count: 2, emoji: '⭐', rng: seqRng([0.1, 0.4, 0.7, 0.9]) });
+    expect(spec.prompt.text).toBe('Ile gwiazdek widzisz?');
+    expect(spec.meta.countLabel).toBe('2 gwiazdki');
   });
 });

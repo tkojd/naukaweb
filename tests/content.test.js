@@ -21,7 +21,15 @@ import {
   syllableWords,
   countingTasks,
   mathProblems,
-  orderingSequences
+  orderingSequences,
+  hasPolishDiacritic,
+  firstStageLetters,
+  POLISH_DIACRITIC_CHARS,
+  countingNounFor,
+  countingPrompt,
+  countingCountLabel,
+  polishPluralCategory,
+  polishCountNoun
 } from '../docs/js/logic/content.js';
 
 // -----------------------------------------------------------------------------
@@ -270,6 +278,67 @@ describe('expanded Letters data', () => {
     for (const s of syllableWords) {
       expect(s.syllables.join('')).toBe(s.word);
     }
+  });
+
+  it('hasPolishDiacritic detects the nine diacritic letters (any case)', () => {
+    for (const d of POLISH_DIACRITIC_CHARS) {
+      expect(hasPolishDiacritic(d)).toBe(true);
+      expect(hasPolishDiacritic(d.toUpperCase())).toBe(true);
+    }
+    for (const plain of ['A', 'b', 'K', 'z']) {
+      expect(hasPolishDiacritic(plain)).toBe(false);
+    }
+    expect(hasPolishDiacritic('')).toBe(false);
+    expect(hasPolishDiacritic(undefined)).toBe(false);
+  });
+
+  it('diacritic letters carry a later default stage than plain letters (C4)', () => {
+    const a = polishLetters.find((l) => l.id === 'letter_a');
+    const aOgonek = polishLetters.find((l) => l.id === 'letter_ą');
+    expect(a.stage).toBe(1);
+    expect(aOgonek.stage).toBeGreaterThan(1);
+    // Every diacritic letter is gated above stage 1; every plain letter is stage 1.
+    for (const l of polishLetters) {
+      if (hasPolishDiacritic(l.prompt)) expect(l.stage).toBeGreaterThan(1);
+      else expect(l.stage).toBe(1);
+    }
+  });
+
+  it('firstStageLetters returns only non-diacritic letters and is a strict subset', () => {
+    const first = firstStageLetters();
+    expect(first.length).toBeGreaterThan(0);
+    expect(first.length).toBeLessThan(polishLetters.length);
+    expect(first.every((l) => !hasPolishDiacritic(l.prompt))).toBe(true);
+  });
+});
+
+describe('Polish count-noun agreement (C5)', () => {
+  it('polishPluralCategory follows Polish rules including the teens exception', () => {
+    expect(polishPluralCategory(0)).toBe('many');
+    expect(polishPluralCategory(1)).toBe('one');
+    expect(polishPluralCategory(3)).toBe('few');
+    expect(polishPluralCategory(4)).toBe('few');
+    expect(polishPluralCategory(5)).toBe('many');
+    expect(polishPluralCategory(13)).toBe('many');
+    expect(polishPluralCategory(23)).toBe('few');
+  });
+
+  it('polishCountNoun inflects using the supplied forms', () => {
+    const forms = countingNounFor('⭐');
+    expect(polishCountNoun(1, forms)).toBe('gwiazdka');
+    expect(polishCountNoun(3, forms)).toBe('gwiazdki');
+    expect(polishCountNoun(7, forms)).toBe('gwiazdek');
+  });
+
+  it('countingPrompt and countingCountLabel produce concrete, agreeing Polish copy', () => {
+    expect(countingPrompt('⭐')).toBe('Ile gwiazdek widzisz?');
+    expect(countingCountLabel('🍎', 1)).toBe('1 jabłko');
+    expect(countingCountLabel('🍎', 2)).toBe('2 jabłka');
+    expect(countingCountLabel('🍎', 5)).toBe('5 jabłek');
+  });
+
+  it('countingNounFor falls back to a neutral noun for unknown glyphs', () => {
+    expect(countingNounFor('🦕')).toEqual({ one: 'obrazek', few: 'obrazki', many: 'obrazków' });
   });
 });
 
