@@ -385,9 +385,21 @@ export function generateMatchPairs({ items = [], pairCount = 4, level = AGE_LEVE
       };
     }
     if (module === LEARNING_MODULES.COLORS) {
-      return { ...base, word: it.answer, speak: { text: it.answer, lang: 'pl-PL', audioKey: it.audioKey } };
+      // Rule A: a young non-reader learning colours does NOT yet read the colour
+      // NAME ("granatowy", "żółty", ...). For EARLY the word card is a SPOKEN
+      // colour name (no text) that the child matches to the SWATCH by sound; the
+      // colour name text appears only for readers (LATE). This removes the
+      // "match the colour NAME word to a colour tile" give-away the user flagged.
+      return {
+        ...base,
+        word: level === AGE_LEVELS.LATE ? it.answer : '',
+        speak: { text: it.answer, lang: 'pl-PL', audioKey: it.audioKey }
+      };
     }
-    // Letters and other modules: show the glyph/prompt.
+    // Letters: the "word" side is the single LETTER GLYPH the child is learning to
+    // recognise (not a word to read), paired with its example-word picture. A
+    // single glyph is a recognition target under rule A, so it is shown at both
+    // levels. Other modules fall back to the prompt glyph/text.
     return { ...base, word: it.prompt, speak: { text: it.prompt, lang: 'pl-PL', audioKey: it.audioKey } };
   });
 
