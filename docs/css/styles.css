@@ -1649,6 +1649,94 @@ input:focus-visible,
   gap: var(--space-4);
 }
 
+/* --- Non-reading (EARLY) exercise pieces --- */
+.worksheet-glyph-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: 1.8rem;
+  margin: var(--space-2) 0;
+}
+
+.worksheet-count-glyph {
+  line-height: 1;
+}
+
+.worksheet-answer-box {
+  width: 64px;
+  height: 48px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-2);
+}
+
+.worksheet-choices--swatch,
+.worksheet-choices--picture,
+.worksheet-choices--glyph {
+  gap: var(--space-5);
+  align-items: center;
+}
+
+.worksheet-swatch {
+  display: inline-block;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+
+.worksheet-glyph-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 48px;
+  padding: 0 var(--space-2);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.worksheet-prompt-picture,
+.worksheet-pic-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.worksheet-prompt-picture {
+  margin: var(--space-2) 0;
+}
+
+.worksheet-pic-choice {
+  width: 64px;
+  height: 64px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-sm);
+}
+
+.worksheet-pic-img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+/* When a real icon is present, hide the emoji fallback on screen; print rules
+   below re-show it so a printed sheet always has a visible picture. */
+.worksheet-pic-img + .worksheet-pic-emoji {
+  display: none;
+}
+
+.worksheet-pic-emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.worksheet-prompt-emoji {
+  margin-right: var(--space-2);
+}
+
 .worksheet-choice {
   border: 2px solid var(--ink);
   border-radius: var(--radius-pill);
@@ -1794,9 +1882,24 @@ input:focus-visible,
   }
 
   .worksheet-choice,
-  .worksheet-match-cell {
+  .worksheet-match-cell,
+  .worksheet-swatch,
+  .worksheet-glyph-choice,
+  .worksheet-pic-choice,
+  .worksheet-answer-box {
     border-color: #000 !important;
     color: #000 !important;
+  }
+
+  /* Swatch colours must survive the black-on-white print reset. */
+  .worksheet-swatch {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Always show the emoji fallback in print (curated SVGs may not render). */
+  .worksheet-pic-img + .worksheet-pic-emoji {
+    display: inline;
   }
 
   .worksheet-answer-line {

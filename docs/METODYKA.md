@@ -132,8 +132,28 @@ oznaczenie autorstwa i licencje znajdują się w pliku
 
 ## Arkusze do druku (worksheet)
 
-Drukowane sprawdziany (`worksheet.js`) są przeznaczone do rozwiązywania na papierze
-pod okiem rodzica/nauczyciela i sprawdzane z kluczem odpowiedzi, więc mogą zawierać
-zadania oparte na tekście (dopasowania, tłumaczenia). Nie są to zadania
-interaktywne dla nieczytającego dziecka i nie podlegają regule A w tym samym
-sensie co lekcje na ekranie.
+Drukowane sprawdziany (`worksheet.js` + `worksheetView.js`) trzymają się tych samych
+zasad A + C1-C5 co lekcje na ekranie i są zależne od poziomu wieku:
+
+- **EARLY (4-6 lat) - bez czytania przez dziecko.** Polecenie czyta na głos
+  dorosły; dziecko odpowiada, wskazując/zakreślając OBRAZEK, ILOŚĆ lub KOLOR.
+  Nie ma dopasowywania NAZWY koloru do kafelka ani zadań cyfra->cyfra, a obrazek w
+  nagłówku nigdy nie zdradza odpowiedzi.
+  - Kolory: „Zakreśl kolor: …” - dorosły mówi nazwę, dziecko zakreśla kolorowy
+    kafelek (nazwa -> swatch; C1). W nagłówku nie ma kafelka koloru docelowego.
+  - Cyfry: „Ile … widzisz?” - grupa obrazków (np. ⭐⭐⭐), dziecko wpisuje cyfrę
+    (ilość -> cyfra; C1/C5, z poprawną odmianą). Nigdy nie drukujemy cyfry docelowej.
+  - Litery: obrazek słowa-przykładu + glify liter do zakreślenia (obraz -> glif;
+    C1/C2). Pierwszy etap tylko litery bez znaków diakrytycznych (C4).
+  - Angielski: „Posłuchaj i zakreśl obrazek: »word«” - dorosły czyta słowo
+    ANGIELSKIE, dziecko zakreśla obrazek znaczenia (angielski dźwięk -> obrazek;
+    C3). Nigdy polskie słowo jako kafelek; dystraktory to inne obrazki (C2).
+- **LATE (7-10 lat) - dla czytających.** Zadania oparte na tekście: wybór
+  odpowiedzi, dopasowanie kolumn, tłumaczenie EN<->PL, uzupełnianie luki,
+  prawda/fałsz. Angielskie zadania czytania wiążą pisownię ze znaczeniem (C3), a
+  nagłówek zadania nie pokazuje obrazka, który zdradzałby odpowiedź (C2).
+
+Domyślnie (gdy nie wybrano poziomu) arkusz generuje się jako EARLY, aby najmłodsze,
+nieczytające dziecko nigdy nie dostało zadania wymagającego czytania. Wszystkie
+obrazki to te same, samodzielnie hostowane ikony (OpenMoji SVG) co w lekcjach; gdy
+brak ikony, drukuje się emoji zastępcze.

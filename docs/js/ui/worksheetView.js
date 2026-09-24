@@ -7,9 +7,16 @@
 //      structure that we render into a print-friendly DOM section, with a
 //      "Drukuj" button that calls window.print().
 //
-// Screen styling reuses the app's design language (tokens, 3D buttons, focus);
-// the @media print rules in styles.css switch the printed output to clean B/W.
-// All DOM is created via el() - never innerHTML on dynamic data.
+// The printed sheet mirrors the on-screen lesson methodology (docs/METODYKA.md):
+//   * EARLY sheets are solvable WITHOUT the CHILD reading: the instruction line is
+//     read aloud by the adult and the child answers by circling PICTURES, counting
+//     QUANTITIES or picking COLOUR swatches. No colour-name-word matching, no
+//     digit==digit, no answer-revealing picture in the header.
+//   * LATE sheets are for readers: written choose / match / translate / fill.
+//
+// All DOM is created via el() - never innerHTML on dynamic data. Asset paths are
+// RELATIVE (the app is served under /naukaweb/); an <img> falls back to the emoji
+// when no curated icon exists.
 
 import { el, clear } from './dom.js';
 import { LEARNING_MODULES, AGE_LEVELS } from '../logic/models.js';
@@ -24,9 +31,8 @@ const MODULE_OPTIONS = [
 ];
 
 const LEVEL_OPTIONS = [
-  { value: '', label: 'Wszystkie poziomy' },
-  { value: AGE_LEVELS.EARLY, label: '4-6 lat' },
-  { value: AGE_LEVELS.LATE, label: '7-10 lat' }
+  { value: AGE_LEVELS.EARLY, label: '4-6 lat (bez czytania)' },
+  { value: AGE_LEVELS.LATE, label: '7-10 lat (dla czytających)' }
 ];
 
 /** Friendly Polish labels for known category ids (fallback: the raw id). */
@@ -62,6 +68,30 @@ function field(labelText, controlEl, id) {
 }
 
 /**
+ * A picture cell: a real <img> (relative curated icon) with the emoji as an
+ * accessible/print fallback, so the child sees a clear picture and print still
+ * shows something when the SVG is unavailable.
+ */
+function pictureCell(className, { emoji, imageSrc }) {
+  const children = [];
+  if (imageSrc) {
+    children.push(
+      el('img', {
+        className: 'worksheet-pic-img',
+        src: imageSrc,
+        alt: '',
+        width: '56',
+        height: '56',
+        loading: 'lazy'
+      })
+    );
+  }
+  // Emoji fallback (also visible in print where SVGs may not render).
+  children.push(el('span', { className: 'worksheet-pic-emoji', text: emoji || '' }));
+  return el('span', { className }, children);
+}
+
+/**
  * @param {HTMLElement} root
  * @param {{onBack:Function}} handlers
  */
@@ -75,7 +105,7 @@ export function renderWorksheetScreen(root, { onBack }) {
   container.appendChild(
     el('p', {
       className: 'worksheet-intro',
-      text: 'Ułóż sprawdzian do wydrukowania. Wybierz zakres, a następnie wydrukuj arkusz.'
+      text: 'Ułóż sprawdzian do wydrukowania. Wybierz zakres, a następnie wydrukuj arkusz. Arkusze dla 4-6 lat są do rozwiązania bez czytania - polecenie przeczyta dorosły.'
     })
   );
 
@@ -140,7 +170,6 @@ export function renderWorksheetScreen(root, { onBack }) {
   ]);
   container.appendChild(form);
 
-  // Output area where the generated worksheet is rendered.
   const output = el('div', { className: 'worksheet-output' });
 
   const actions = el('div', { className: 'worksheet-actions' }, [
@@ -186,7 +215,6 @@ function renderWorksheet(host, data, withKey) {
     className: `worksheet-sheet${withKey ? ' worksheet-sheet--with-key' : ''}`
   });
 
-  // --- Drukuj action (hidden when printing) --------------------------------
   host.appendChild(
     el('div', { className: 'worksheet-print-bar' }, [
       el('button', {
@@ -202,20 +230,22 @@ function renderWorksheet(host, data, withKey) {
     ])
   );
 
-  // --- Header ---------------------------------------------------------------
+  const isEarly = data.meta.generationLevel === AGE_LEVELS.EARLY;
   const header = el('header', { className: 'worksheet-header' }, [
     el('h2', { className: 'worksheet-title', text: data.title }),
     el('div', { className: 'worksheet-meta' }, [
       el('span', { className: 'worksheet-meta-item', text: 'Imię: __________________' }),
-      el('span', {
-        className: 'worksheet-meta-item',
-        text: `Data: ${today()}`
-      }),
+      el('span', { className: 'worksheet-meta-item', text: `Data: ${today()}` }),
       data.meta.levelLabel
         ? el('span', { className: 'worksheet-meta-item', text: `Poziom: ${data.meta.levelLabel}` })
         : null,
-      // Be honest when a requested age band/category could not be enforced (the
-      // pool would have been empty), so the sheet does not misrepresent its scope.
+      // For a non-reading sheet, tell the adult to read the instructions aloud.
+      isEarly
+        ? el('span', {
+            className: 'worksheet-meta-item worksheet-meta-note',
+            text: 'Polecenia czyta dorosły; dziecko odpowiada, wskazując obrazek, kolor lub liczbę.'
+          })
+        : null,
       data.meta.scopeWidened
         ? el('span', {
             className: 'worksheet-meta-item worksheet-meta-note',
@@ -226,14 +256,12 @@ function renderWorksheet(host, data, withKey) {
   ]);
   sheet.appendChild(header);
 
-  // --- Exercises ------------------------------------------------------------
   const list = el('ol', { className: 'worksheet-exercises' });
   for (const ex of data.exercises) {
     list.appendChild(renderExercise(ex));
   }
   sheet.appendChild(list);
 
-  // --- Answer key (optional) ------------------------------------------------
   if (withKey && data.answerKey && data.answerKey.length > 0) {
     const keySection = el('section', { className: 'worksheet-answer-key' }, [
       el('h3', { className: 'worksheet-answer-key-title', text: 'Klucz odpowiedzi' }),
@@ -253,16 +281,86 @@ function renderWorksheet(host, data, withKey) {
 
 /** Render a single exercise <li> with answer space appropriate to its kind. */
 function renderExercise(ex) {
-  const item = el('li', { className: `worksheet-exercise worksheet-exercise--${ex.kind}`, value: String(ex.number) });
+  const item = el('li', {
+    className: `worksheet-exercise worksheet-exercise--${ex.kind}`,
+    value: String(ex.number)
+  });
 
   if (ex.instructions) {
     item.appendChild(el('p', { className: 'worksheet-instructions', text: ex.instructions }));
   }
-  item.appendChild(el('p', { className: 'worksheet-prompt', text: ex.prompt }));
 
   switch (ex.kind) {
+    // --- EARLY (no reading) ---
+    case 'count': {
+      // A row of counting glyphs + a blank box for the digit. No target digit is
+      // ever printed in the prompt (rule C1).
+      const row = el(
+        'div',
+        { className: 'worksheet-glyph-row' },
+        (ex.glyphs || []).map((g) => el('span', { className: 'worksheet-count-glyph', text: g }))
+      );
+      item.appendChild(row);
+      item.appendChild(el('div', { className: 'worksheet-answer-box', 'aria-hidden': 'true' }));
+      break;
+    }
+    case 'find-color': {
+      // Colour swatches to circle; the target colour name is spoken by the adult
+      // (in the instruction), never printed as the answer.
+      const row = el(
+        'div',
+        { className: 'worksheet-choices worksheet-choices--swatch' },
+        (ex.swatches || []).map((s) =>
+          el('span', {
+            className: 'worksheet-swatch',
+            style: { backgroundColor: s.colorHex },
+            'aria-hidden': 'true'
+          })
+        )
+      );
+      item.appendChild(row);
+      break;
+    }
+    case 'first-letter': {
+      // The example-word picture (no letter shown) + letter glyphs to circle.
+      item.appendChild(
+        pictureCell('worksheet-prompt-picture', { emoji: ex.promptEmoji, imageSrc: ex.promptImageSrc })
+      );
+      const row = el(
+        'div',
+        { className: 'worksheet-choices worksheet-choices--glyph' },
+        (ex.letterChoices || []).map((l) =>
+          el('span', { className: 'worksheet-glyph-choice', text: l.glyph })
+        )
+      );
+      item.appendChild(row);
+      break;
+    }
+    case 'english-picture': {
+      // Meaning pictures to circle; the English word is read aloud by the adult
+      // (in the instruction). The header carries NO picture (rule C2).
+      const row = el(
+        'div',
+        { className: 'worksheet-choices worksheet-choices--picture' },
+        (ex.pictureChoices || []).map((p) =>
+          pictureCell('worksheet-pic-choice', { emoji: p.emoji, imageSrc: p.imageSrc })
+        )
+      );
+      item.appendChild(row);
+      break;
+    }
+
+    // --- LATE (readers) ---
     case 'choose':
     case 'truefalse': {
+      if (ex.promptText) {
+        const prompt = el('p', { className: 'worksheet-prompt' });
+        if (ex.promptEmoji) {
+          prompt.appendChild(el('span', { className: 'worksheet-prompt-emoji', text: ex.promptEmoji }));
+        }
+        prompt.appendChild(document.createTextNode(ex.promptText));
+        item.appendChild(prompt);
+      }
       const row = el('div', { className: 'worksheet-choices' });
       for (const choice of ex.choices || []) {
         row.appendChild(el('span', { className: 'worksheet-choice', text: choice }));
@@ -271,7 +369,7 @@ function renderExercise(ex) {
       break;
     }
     case 'match': {
-      const cols = ex.choices || { left: [], right: [] };
+      const cols = ex.matchColumns || { left: [], right: [] };
       const board = el('div', { className: 'worksheet-match' }, [
         el(
           'ul',
@@ -289,10 +387,15 @@ function renderExercise(ex) {
     }
     case 'fill':
     case 'translate':
-    case 'count':
     default: {
-      // A visible answer line the child writes on. 'count'/'fill'/'translate'
-      // already print a blank in the prompt; add a generous writing line too.
+      if (ex.promptText) {
+        const prompt = el('p', { className: 'worksheet-prompt' });
+        if (ex.promptEmoji) {
+          prompt.appendChild(el('span', { className: 'worksheet-prompt-emoji', text: ex.promptEmoji }));
+        }
+        prompt.appendChild(document.createTextNode(ex.promptText));
+        item.appendChild(prompt);
+      }
       item.appendChild(el('div', { className: 'worksheet-answer-line', 'aria-hidden': 'true' }));
       break;
     }
